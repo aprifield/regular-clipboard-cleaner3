@@ -18,10 +18,12 @@
     "electron-builder": "^24.13.3",
     "eslint": "^9.39.1",
     "eslint-config-vuetify": "^4.2.1-beta.1",
+    "sass": "^1.94.0",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
     "vite-plugin-electron": "^0.28.6",
     "vite-plugin-electron-renderer": "^0.14.5",
+    "vite-plugin-vuetify": "^2.1.2",
     "vue-tsc": "^2.0.26"
   },
   "main": "dist-electron/main.js"

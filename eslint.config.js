@@ -9,6 +9,7 @@ export default vuetify({
       },
     ],
     '@stylistic/semi': ['error', 'always'],
+    'stylistic/comma-dangle': ['error', 'never'],
     'vue/script-indent': 'off',
   },
 });

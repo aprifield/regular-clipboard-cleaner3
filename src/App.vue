@@ -2,7 +2,7 @@
 import type { HistoryEvent } from '@/types/history-event';
 import type { HistoryItem } from '@/types/history-item';
 import type { Settings } from '@/types/settings';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import ClipboardHistory from '@/components/ClipboardHistory.vue';
 import ClipboardSettings from '@/components/ClipboardSettings.vue';
 
@@ -12,25 +12,60 @@ const platform = ref('win32');
 const historyItems = ref<HistoryItem[]>([]);
 const settings = ref<Settings>({});
 
-function onClipboardListItemClick(text: string, event: HistoryEvent) {
-  // this.ipcBridge.send('web-list-item-click', text, event);
-}
+const onClipboardListItemClick = (text: string, event: HistoryEvent) => {
+  window.ipcBridge.send('web-list-item-click', text, event);
+};
 
-function onClipboardDeleteClick(text: string) {
-  // this.ipcBridge.send('web-delete-click', text);
-}
+const onClipboardDeleteClick = (text: string) => {
+  window.ipcBridge.send('web-delete-click', text);
+};
 
-function onClipboardEnterKeyDown(text: string, event: HistoryEvent) {
-  // this.ipcBridge.send('web-enter-keydown', text, event);
-}
+const onClipboardEnterKeyDown = (text: string, event: HistoryEvent) => {
+  window.ipcBridge.send('web-enter-keydown', text, event);
+};
 
-function onClipboardEscapeKeyDown() {
-  // this.ipcBridge.send('web-escape-keydown');
-}
+const onClipboardEscapeKeyDown = () => {
+  window.ipcBridge.send('web-escape-keydown');
+};
 
-function onClipboardSettingsChange(settings: Settings) {
-  // this.ipcBridge.send('web-settings-change', settings);
-}
+const onClipboardSettingsChange = (settings: Settings) => {
+  window.ipcBridge.send('web-settings-change', settings);
+};
+
+onMounted(() => {
+  window.ipcBridge.send('web-app-mounted', {
+    mode: mode.value,
+  });
+});
+
+(() => {
+  const searchParams = new URL(window.location.href).searchParams;
+  mode.value = searchParams.get('mode') || 'history';
+  locale.value = searchParams.get('locale') || 'en';
+  platform.value = searchParams.get('platform') || 'win32';
+
+  window.ipcBridge.send('web-app-created');
+  window.ipcBridge.on('init-history', (event, args) => {
+    historyItems.value = args;
+  });
+  window.ipcBridge.on('init-settings', (event, args) => {
+    settings.value = args;
+    // this.$vuetify.theme.dark = !!settings.value.darkTheme; // FIXME for dark mode
+    const html = document.querySelector('html') as HTMLHtmlElement;
+    if (mode.value === 'history') {
+      html.classList.add('overflow-hidden');
+    }
+    if (platform.value === 'win32') {
+      if (settings.value.darkTheme) {
+        html.classList.remove('webkit-scrollbar--light');
+        html.classList.add('webkit-scrollbar--dark');
+      } else {
+        html.classList.remove('webkit-scrollbar--dark');
+        html.classList.add('webkit-scrollbar--light');
+      }
+    }
+  });
+})();
 </script>
 
 <template>
@@ -56,17 +91,49 @@ function onClipboardSettingsChange(settings: Settings) {
   </v-app>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style lang="scss">
+* {
+  user-select: none;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+html {
+  overflow: auto;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.webkit-scrollbar {
+  &--dark {
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgb(30, 30, 30);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgb(66, 66, 66);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(79, 79, 79);
+    }
+  }
+  &--light {
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgb(241, 241, 241);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgb(192, 192, 192);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(168, 168, 168);
+    }
+  }
 }
 </style>

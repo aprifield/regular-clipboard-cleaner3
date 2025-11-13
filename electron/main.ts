@@ -1,7 +1,9 @@
-import { app, BrowserWindow } from 'electron';
+import path from 'node:path';
 // import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { HistoryEvent } from '@/types/history-event';
+import { Settings } from '@/types/settings';
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +27,9 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, 'public')
   : RENDERER_DIST;
+
+const gotTheLock = app.requestSingleInstanceLock();
+console.log('gotTheLock', gotTheLock);
 
 let win: BrowserWindow | null;
 
@@ -64,7 +69,79 @@ app.on('activate', () => {
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+    // showOrCreateWindow('history');
   }
 });
+
+ipcMain.on('web-app-created', () => {
+  // sendToWebContents();
+});
+//   .on(
+//     'web-app-mounted',
+//     (event, [{ mode }]: [{ mode: 'history' | 'settings' }]) => {
+//       // showOrCreateWindow(mode);
+//       createWindow();
+//     }
+//   )
+//   .on(
+//     'web-list-item-click',
+//     (event, [text, historyEvent]: [string, HistoryEvent]) => {
+//       // copyTextAndPostProcess(text, historyEvent);
+//     }
+//   )
+//   .on(
+//     'web-enter-keydown',
+//     (event, [text, historyEvent]: [string, HistoryEvent]) => {
+//       // copyTextAndPostProcess(text, historyEvent);
+//     }
+//   )
+//   .on('web-escape-keydown', () => {
+//     if (historyWin) {
+//       // hideWindow('history');
+//     }
+//   })
+//   .on('web-delete-click', (event, [text]: [string]) => {
+//     // deleteHistory(text);
+//     // sendToWebContents();
+//   })
+//   .on('web-settings-change', (event, [settings]: [Settings]) => {
+//     // if (historyWin) {
+//     //   if (getSettings().showFrame !== settings.showFrame) {
+//     //     historyWin.close();
+//     //   }
+//     // }
+//     // setSettings(settings);
+//     // restartMonitoring();
+//     // registerShortcut();
+//     // setOpenAtLogin();
+//     // switchTaskbarIcon(historyWin);
+//     // sendToWebContents();
+//   })
+//   .on('app-menu-settings-click', () => {
+//     // showOrCreateWindow('settings');
+//   })
+//   .on('app-menu-delete-all-history-click', () => {
+//     // deleteAllHistory();
+//     // sendToWebContents();
+//   })
+//   .on('app-tray-history-click', () => {
+//     // showOrCreateWindow('history');
+//   })
+//   .on('app-tray-settings-click', () => {
+//     //showOrCreateWindow('settings');
+//   })
+//   .on('app-tray-delete-all-history-click', () => {
+//     // deleteAllHistory();
+//     // sendToWebContents();
+//   })
+//   .on('app-tray-exit-click', () => {
+//     //app.quit();
+//   })
+//   .on('global-shortcut-focus', () => {
+//     //showOrCreateWindow('history');
+//   })
+//   .on('clipboard-history-change', () => {
+//     //sendToWebContents();
+//   });
 
 app.whenReady().then(createWindow);
