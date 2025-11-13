@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { Settings } from '@/types/settings';
+import { ref } from 'vue';
 
-defineProps<{ msg: string }>()
+defineProps<{
+  locale: string;
+  platform: string;
+  settings: Settings;
+}>();
 
-const count = ref(0)
+const count = ref(0);
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
+  <h1>{{ locale }}</h1>
 
   <div class="card">
     <button type="button" @click="count++">count is {{ count }}</button>
@@ -19,8 +24,8 @@ const count = ref(0)
 
   <p>
     Check out
-    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank"
-      >create-vue</a
+    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank">
+      create-vue </a
     >, the official Vue + Vite starter
   </p>
   <p>

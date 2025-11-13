@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { HistoryItem } from '@/types/history-item';
+import type { Settings } from '@/types/settings';
+import { ref } from 'vue';
 
-defineProps<{ msg: string }>()
+defineProps<{
+  historyItems: HistoryItem[];
+  settings: Settings;
+}>();
 
-const count = ref(0)
+const count = ref(0);
 </script>
 
 <template>
