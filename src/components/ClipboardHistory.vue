@@ -2,10 +2,10 @@
 import { HistoryEvent } from '@/types/history-event';
 import type { HistoryItem } from '@/types/history-item';
 import type { Settings } from '@/types/settings';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import ClipboardHistoryText from '@/components/ClipboardHistoryText.vue';
 
-// FIXME to  TableHistoryItem
-interface TableHistoryItems extends HistoryItem {
+interface TableHistoryItem extends HistoryItem {
   index: number;
   row: number;
 }
@@ -21,6 +21,11 @@ const props = defineProps<{
   settings: Settings;
 }>();
 
+const emit = defineEmits<{
+  (e: 'clipboard-escape-keydown'): void; // FIXME rename
+  (e: 'clipboard-delete-click', value: string): void; // FIXME rename
+}>();
+
 const search = ref('');
 const isTextFieldFocused = ref(false);
 const selectedIndex = ref(-1);
@@ -30,18 +35,20 @@ const historyItemHeight = ref(32);
 const historyContainerHeight = ref(300);
 const keyboardEvents = ref<KeyboardEvent[]>([]);
 const copyEventParams = ref<CopyEventParams>();
+const textField = ref<{ $el: HTMLDivElement } | null>(null);
+const historyList = ref<{ $el: HTMLDivElement } | null>(null);
 
 const maxVisibleItemCount = computed(() => {
   return Math.floor(historyContainerHeight.value / historyItemHeight.value);
 });
 
-const tableHistoryItems = computed<TableHistoryItems[]>(() => {
+const tableHistoryItems = computed<TableHistoryItem[]>(() => {
   return props.historyItems.map((item, index) => {
     return { ...item, index, row: index + 1 };
   });
 });
 
-const currentHistoryItems = computed<TableHistoryItems[]>(() => {
+const currentHistoryItems = computed<TableHistoryItem[]>(() => {
   if (search.value) {
     const wordRegExps = search.value
       .split(' ')
@@ -104,23 +111,13 @@ const createHistoryEvent = (): HistoryEvent => {
 };
 const focusInTextField = () => {
   if (!isTextFieldFocused.value) {
-    // FIXME implements
-    // (
-    //   (this.$refs.textField as Vue).$el.querySelector(
-    //     'input'
-    //   ) as HTMLInputElement
-    // ).focus();
+    (textField.value!.$el.querySelector('input') as HTMLInputElement).focus();
   }
 };
 
 const focusOutTextField = () => {
   if (isTextFieldFocused.value) {
-    // FIXME implements
-    // (
-    //   (this.$refs.textField as Vue).$el.querySelector(
-    //     'input'
-    //   ) as HTMLInputElement
-    // ).blur();
+    (textField.value!.$el.querySelector('input') as HTMLInputElement).blur();
   }
 };
 
@@ -133,6 +130,7 @@ const tryEmitCopyEvent = (params: CopyEventParams) => {
 };
 
 const emitCopyEvent = (params: CopyEventParams) => {
+  console.log('CopyEventParams', params);
   // FIXME impl
   // this.$emit(
   //   params.eventName,
@@ -155,15 +153,13 @@ const adjustScrollPositionAndFindTargetRow = async (targetIndex: number) => {
     targetIndex * historyItemHeight.value,
   ];
 
-  // FIXME impl
-  const scrollTop = 0; // (this.$refs.historyList as Vue).$el.scrollTop;
+  const scrollTop = historyList.value!.$el.scrollTop;
 
-  // FIXME impl
-  // if (scrollTop < visibleScrollRange[0]) {
-  //   (this.$refs.historyList as Vue).$el.scrollTop = visibleScrollRange[0];
-  // } else if (scrollTop > visibleScrollRange[1]) {
-  //   (this.$refs.historyList as Vue).$el.scrollTop = visibleScrollRange[1];
-  // }
+  if (scrollTop < visibleScrollRange[0]) {
+    historyList.value!.$el.scrollTop = visibleScrollRange[0];
+  } else if (scrollTop > visibleScrollRange[1]) {
+    historyList.value!.$el.scrollTop = visibleScrollRange[1];
+  }
 
   return new Promise((resolve: (targetRow: Element | null) => void) => {
     let retryCount = 0;
@@ -201,153 +197,146 @@ const onListItemClick = (text: string) => {
 };
 
 const onDeleteClick = (text: string) => {
-  // FIXME impl
-  // this.$emit('clipboard-delete-click', text);
+  emit('clipboard-delete-click', text);
   selectedIndex.value = -1;
 };
 
-//     async onWindowKeyDown(event: KeyboardEvent) {
-//       if (event.isComposing) {
-//         return;
-//       }
+const onWindowKeyDown = async (event: KeyboardEvent) => {
+  if (event.isComposing) {
+    return;
+  }
 
-//       if (event.code === 'Escape') {
-//         event.preventDefault();
-//         this.$emit('clipboard-escape-keydown');
-//         this.initStatus();
-//       } else if (event.code === 'Enter') {
-//         event.preventDefault();
-//         if (this.currentHistoryItems[this.selectedIndex]) {
-//           this.tryEmitCopyEvent({
-//             eventName: 'clipboard-enter-keydown',
-//             text: this.currentHistoryItems[this.selectedIndex].text,
-//             historyEvent: this.createHistoryEvent(),
-//           });
-//         }
-//       } else if (event.code === 'KeyF' && (event.ctrlKey || event.metaKey)) {
-//         event.preventDefault();
-//         this.focusInTextField();
-//         this.selectedIndex = -1;
-//       } else if (
-//         event.code === 'Home' ||
-//         event.code === 'End' ||
-//         event.code === 'PageUp' ||
-//         event.code === 'PageDown' ||
-//         event.code === 'ArrowUp' ||
-//         event.code === 'ArrowDown' ||
-//         event.code === 'Tab'
-//       ) {
-//         if (
-//           (event.code === 'Home' || event.code === 'End') &&
-//           this.isTextFieldFocused
-//         ) {
-//           return;
-//         }
+  if (event.code === 'Escape') {
+    event.preventDefault();
+    emit('clipboard-escape-keydown');
+    initStatus();
+  } else if (event.code === 'Enter') {
+    event.preventDefault();
+    if (currentHistoryItems.value[selectedIndex.value]) {
+      tryEmitCopyEvent({
+        eventName: 'clipboard-enter-keydown',
+        text: currentHistoryItems.value[selectedIndex.value].text,
+        historyEvent: createHistoryEvent(),
+      });
+    }
+  } else if (event.code === 'KeyF' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    focusInTextField();
+    selectedIndex.value = -1;
+  } else if (
+    event.code === 'Home' ||
+    event.code === 'End' ||
+    event.code === 'PageUp' ||
+    event.code === 'PageDown' ||
+    event.code === 'ArrowUp' ||
+    event.code === 'ArrowDown' ||
+    event.code === 'Tab'
+  ) {
+    if (
+      (event.code === 'Home' || event.code === 'End') &&
+      isTextFieldFocused.value
+    ) {
+      return;
+    }
 
-//         event.preventDefault();
-//         if (this.findTargetTimeoutId !== -1) {
-//           return;
-//         }
+    event.preventDefault();
+    if (findTargetTimeoutId.value !== -1) {
+      return;
+    }
 
-//         let targetSelectedIndex = -1;
-//         if (event.code === 'Home' || event.code === 'End') {
-//           targetSelectedIndex =
-//             event.code === 'Home' ? 0 : this.currentHistoryItems.length - 1;
-//         } else if (event.code === 'PageUp' || event.code === 'PageDown') {
-//           targetSelectedIndex =
-//             (this.selectedIndex === -1 ? 0 : this.selectedIndex) +
-//             (event.code === 'PageUp'
-//               ? -this.maxVisibleItemCount
-//               : this.maxVisibleItemCount);
-//           if (!this.currentHistoryItems[targetSelectedIndex]) {
-//             targetSelectedIndex =
-//               event.code === 'PageUp' ? 0 : this.currentHistoryItems.length - 1;
-//           }
-//         } else {
-//           targetSelectedIndex =
-//             event.code === 'ArrowUp' || (event.code === 'Tab' && event.shiftKey)
-//               ? this.selectedIndex - 1
-//               : this.selectedIndex + 1;
-//           if (this.selectedIndex === -1 || targetSelectedIndex === -1) {
-//             this.focusInTextField();
-//             this.selectedIndex = -1;
-//           }
-//         }
-//         if (this.currentHistoryItems[targetSelectedIndex]) {
-//           const targetSelectedRow =
-//             await this.adjustScrollPositionAndFindTargetRow(
-//               targetSelectedIndex
-//             );
-//           if (targetSelectedRow) {
-//             this.selectedIndex = targetSelectedIndex;
-//           } else {
-//             this.selectedIndex = -1;
-//           }
-//         }
-//       } else {
-//         if (!this.keyboardEvents.some((e) => e.code == event.code)) {
-//           this.keyboardEvents.push(event);
-//         }
-//       }
-//     },
-//     onWindowKeyUp(event: KeyboardEvent) {
-//       this.keyboardEvents = this.keyboardEvents.filter(
-//         (e) => e.code !== event.code
-//       );
-//       if (!this.keyboardEvents.length && this.copyEventParams) {
-//         this.emitCopyEvent(this.copyEventParams);
-//       }
-//     },
-//     onWindowResize() {
-//       const historyContainer = (this.$refs.historyList as Vue).$el.closest(
-//         '.v-card__text'
-//       );
-//       this.historyContainerHeight = historyContainer
-//         ? historyContainer.clientHeight
-//         : 300;
-//     },
-//     onWindowBlur() {
-//       this.keyboardEvents = [];
-//     },
-//   },
+    let targetSelectedIndex = -1;
+    if (event.code === 'Home' || event.code === 'End') {
+      targetSelectedIndex =
+        event.code === 'Home' ? 0 : currentHistoryItems.value.length - 1;
+    } else if (event.code === 'PageUp' || event.code === 'PageDown') {
+      targetSelectedIndex =
+        (selectedIndex.value === -1 ? 0 : selectedIndex.value) +
+        (event.code === 'PageUp'
+          ? -maxVisibleItemCount.value
+          : maxVisibleItemCount.value);
+      if (!currentHistoryItems.value[targetSelectedIndex]) {
+        targetSelectedIndex =
+          event.code === 'PageUp' ? 0 : currentHistoryItems.value.length - 1;
+      }
+    } else {
+      targetSelectedIndex =
+        event.code === 'ArrowUp' || (event.code === 'Tab' && event.shiftKey)
+          ? selectedIndex.value - 1
+          : selectedIndex.value + 1;
+      if (selectedIndex.value === -1 || targetSelectedIndex === -1) {
+        focusInTextField();
+        selectedIndex.value = -1;
+      }
+    }
+    if (currentHistoryItems.value[targetSelectedIndex]) {
+      const targetSelectedRow = await adjustScrollPositionAndFindTargetRow(
+        targetSelectedIndex
+      );
+      if (targetSelectedRow) {
+        selectedIndex.value = targetSelectedIndex;
+      } else {
+        selectedIndex.value = -1;
+      }
+    }
+  } else {
+    if (!keyboardEvents.value.some((e) => e.code == event.code)) {
+      keyboardEvents.value.push(event);
+    }
+  }
+};
 
-//   watch: {
-//     historyItems(
-//       newHistoryItems: HistoryItem[],
-//       oldHistoryItems: HistoryItem[]
-//     ) {
-//       if (oldHistoryItems.length <= newHistoryItems.length) {
-//         (this.$refs.historyList as Vue).$el.classList.add(
-//           'scroll-behavior-smooth'
-//         );
-//         (this.$refs.historyList as Vue).$el.scrollTop = 0;
-//         (this.$refs.historyList as Vue).$el.classList.remove(
-//           'scroll-behavior-smooth'
-//         );
-//       }
-//     },
-//     selectedIndex() {
-//       if (this.selectedIndex !== -1) {
-//         this.focusOutTextField();
-//       }
-//     },
-//   },
+const onWindowKeyUp = (event: KeyboardEvent) => {
+  keyboardEvents.value = keyboardEvents.value.filter(
+    (e) => e.code !== event.code
+  );
+  if (!keyboardEvents.value.length && copyEventParams.value) {
+    emitCopyEvent(copyEventParams.value);
+  }
+};
 
-//   mounted() {
-//     window.addEventListener('keydown', this.onWindowKeyDown);
-//     window.addEventListener('keyup', this.onWindowKeyUp);
-//     window.addEventListener('resize', this.onWindowResize);
-//     window.addEventListener('blur', this.onWindowBlur);
-//     this.onWindowResize();
-//   },
+const onWindowResize = () => {
+  const historyContainer = historyList.value!.$el.closest('.v-card__text');
+  historyContainerHeight.value = historyContainer
+    ? historyContainer.clientHeight
+    : 300;
+};
 
-//   destroyed() {
-//     window.removeEventListener('keydown', this.onWindowKeyDown);
-//     window.removeEventListener('keyup', this.onWindowKeyUp);
-//     window.removeEventListener('resize', this.onWindowResize);
-//     window.removeEventListener('blur', this.onWindowBlur);
-//   },
-// });
+const onWindowBlur = () => {
+  keyboardEvents.value = [];
+};
+
+watch(
+  () => props.historyItems,
+  (newHistoryItems: HistoryItem[], oldHistoryItems: HistoryItem[]) => {
+    if (oldHistoryItems.length <= newHistoryItems.length) {
+      historyList.value!.$el.classList.add('scroll-behavior-smooth');
+      historyList.value!.$el.scrollTop = 0;
+      historyList.value!.$el.classList.remove('scroll-behavior-smooth');
+    }
+  }
+);
+
+watch(selectedIndex, () => {
+  if (selectedIndex.value !== -1) {
+    focusOutTextField();
+  }
+});
+
+onMounted(() => {
+  console.log('historyList', historyList.value);
+  window.addEventListener('keydown', onWindowKeyDown);
+  window.addEventListener('keyup', onWindowKeyUp);
+  window.addEventListener('resize', onWindowResize);
+  window.addEventListener('blur', onWindowBlur);
+  onWindowResize();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onWindowKeyDown);
+  window.removeEventListener('keyup', onWindowKeyUp);
+  window.removeEventListener('resize', onWindowResize);
+  window.removeEventListener('blur', onWindowBlur);
+});
 </script>
 
 <template>

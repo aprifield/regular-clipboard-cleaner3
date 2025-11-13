@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { HistoryEvent } from '@/types/history-event';
 import { Settings } from '@/types/settings';
+import './background/clipboard-cleaner';
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
