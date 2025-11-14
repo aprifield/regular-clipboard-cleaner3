@@ -7,7 +7,7 @@ const clipboardStore = new Store<{ clipboard: HistoryItem[] }>({
   name: '.clipboard',
   fileExtension: '',
   encryptionKey: 'LzCHFd8929C4W1EEN6hPCsPYtIVTBjx7',
-  defaults: { clipboard: [] }
+  defaults: { clipboard: [] },
 });
 
 const settingsStore = new Store<{ settings: Settings }>({
@@ -19,9 +19,9 @@ const settingsStore = new Store<{ settings: Settings }>({
       startAtLogin: true,
       pasteAfterCopy: process.platform !== 'darwin',
       closeAfterCopy: true,
-      showNearCursor: true
-    }
-  }
+      showNearCursor: true,
+    },
+  },
 });
 
 console.log('[electron-store-helper] path', clipboardStore.path);
@@ -66,7 +66,7 @@ export function setWindowSettings(
 ) {
   const settings: Settings = {
     ...getSettings(),
-    [mode === 'settings' ? 'settingsBounds' : 'historyBounds']: bounds
+    [mode === 'settings' ? 'settingsBounds' : 'historyBounds']: bounds,
   };
   setSettings(settings);
 }

@@ -4,11 +4,11 @@ import {
   getSettings,
   setHistoryItems,
 } from './electron-store-helper';
-import rules from '@/util/rules';
+import rules from '../../src/util/rules';
 
 let timeoutId: NodeJS.Timeout;
 
-function startMonitoring() {
+const startMonitoring = () => {
   const historyItems = getHistoryItems();
   const settings = getSettings();
 
@@ -107,14 +107,14 @@ function startMonitoring() {
       }
     }
   }, monitorInterval * 1000);
-}
+};
 
-export function restartMonitoring() {
+export const restartMonitoring = () => {
   clearInterval(timeoutId);
   timeoutId = startMonitoring();
-}
+};
 
-export function deleteHistory(removedText: string) {
+export const deleteHistory = (removedText: string) => {
   const clipboardText = clipboard.readText();
   if (clipboardText && clipboardText === removedText) {
     clipboard.clear();
@@ -128,14 +128,14 @@ export function deleteHistory(removedText: string) {
   setHistoryItems(historyItems);
 
   restartMonitoring();
-}
+};
 
-export function deleteAllHistory() {
+export const deleteAllHistory = () => {
   clipboard.clear();
 
   setHistoryItems([]);
 
   restartMonitoring();
-}
+};
 
 timeoutId = startMonitoring();

@@ -1,6 +1,13 @@
 // let historyWin: BrowserWindow | null;
 // let settingsWin: BrowserWindow | null;
 
+import { BrowserWindow, nativeTheme } from 'electron';
+import {
+  getHistoryItems,
+  getSettings,
+  setSettings,
+} from './electron-store-helper';
+
 // // Scheme must be registered before the app is ready
 // protocol.registerSchemesAsPrivileged([
 //   { scheme: 'app', privileges: { secure: true, standard: true } },
@@ -194,22 +201,25 @@
 //   }
 // }
 
-// const sendToWebContents = () => {
-//   const historyItems = getHistoryItems();
-//   const settings = getSettings();
-//   if (settings.darkTheme === undefined) {
-//     settings.darkTheme = nativeTheme.shouldUseDarkColors;
-//     setSettings(settings);
-//   }
-//   if (historyWin) {
-//     historyWin.webContents.send('init-history', historyItems);
-//     historyWin.webContents.send('init-settings', settings);
-//   }
-//   if (settingsWin) {
-//     settingsWin.webContents.send('init-history', historyItems);
-//     settingsWin.webContents.send('init-settings', settings);
-//   }
-// };
+export const sendToWebContents = (
+  historyWin: BrowserWindow | null,
+  settingsWin: BrowserWindow | null
+) => {
+  const historyItems = getHistoryItems();
+  const settings = getSettings();
+  if (settings.darkTheme === undefined) {
+    settings.darkTheme = nativeTheme.shouldUseDarkColors;
+    setSettings(settings);
+  }
+  if (historyWin) {
+    historyWin.webContents.send('init-history', historyItems);
+    historyWin.webContents.send('init-settings', settings);
+  }
+  if (settingsWin) {
+    settingsWin.webContents.send('init-history', historyItems);
+    settingsWin.webContents.send('init-settings', settings);
+  }
+};
 
 // const copyTextAndPostProcess = (text: string, historyEvent: HistoryEvent) => {
 //   const settings = getSettings();

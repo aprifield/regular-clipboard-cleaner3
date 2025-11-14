@@ -295,7 +295,7 @@ const onWindowKeyUp = (event: KeyboardEvent) => {
 };
 
 const onWindowResize = () => {
-  const historyContainer = historyList.value!.$el.closest('.v-card__text');
+  const historyContainer = historyList.value!.$el.closest('.v-card-text');
   historyContainerHeight.value = historyContainer
     ? historyContainer.clientHeight
     : 300;
@@ -340,7 +340,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-container fluid class="pa-0">
+  <v-container fluid class="clipboard-history pa-0">
     <v-card flat>
       <v-card-title>
         <v-text-field
@@ -378,48 +378,45 @@ onUnmounted(() => {
               dense
               @click="onListItemClick(item.text)"
             >
-              <v-list-item-icon
-                class="history-row"
-                @mousemove="selectedIndex = index"
-              >
-                <span
-                  class="text-right secondary--text"
-                  :style="{ 'min-width': '16px' }"
-                >
-                  {{ item.row }}
-                </span>
-              </v-list-item-icon>
-              <v-list-item-content
+              <template v-slot:prepend>
+                <div class="history-row" @mousemove="selectedIndex = index">
+                  <span
+                    class="text-right secondary--text"
+                    :style="{ 'min-width': '16px' }"
+                  >
+                    {{ item.row }}
+                  </span>
+                </div>
+              </template>
+              <v-list-item-title
                 class="history-text"
                 @mousemove="selectedIndex = index"
               >
-                <v-list-item-title>
-                  <ClipboardHistoryText
-                    :text="item.text"
-                    :time="item.time"
-                    :tooltip="index === selectedIndex"
-                    :tooltipLineCount="
-                      Math.floor((maxVisibleItemCount * 2) / 3)
-                    "
-                    :historyEvent="tooltipHistoryEvent"
-                    :settings="settings"
-                  />
-                </v-list-item-title>
-              </v-list-item-content>
-              <v-list-item-icon
-                class="history-action"
-                title="Delete"
-                @mousemove="selectedIndex = index"
-              >
-                <v-btn
-                  icon
-                  x-small
-                  @click.stop="onDeleteClick(item.text)"
-                  @mousedown.stop
+                <ClipboardHistoryText
+                  :text="item.text"
+                  :time="item.time"
+                  :tooltip="index === selectedIndex"
+                  :tooltipLineCount="Math.floor((maxVisibleItemCount * 2) / 3)"
+                  :historyEvent="tooltipHistoryEvent"
+                  :settings="settings"
+                />
+              </v-list-item-title>
+              <template v-slot:append>
+                <div
+                  class="history-action"
+                  title="Delete"
+                  @mousemove="selectedIndex = index"
                 >
-                  <v-icon>mdi-trash-can-outline</v-icon>
-                </v-btn>
-              </v-list-item-icon>
+                  <v-btn
+                    icon
+                    x-small
+                    @click.stop="onDeleteClick(item.text)"
+                    @mousedown.stop
+                  >
+                    <v-icon>mdi-trash-can-outline</v-icon>
+                  </v-btn>
+                </div>
+              </template>
             </v-list-item>
             <v-divider
               v-if="index !== currentHistoryItems.length - 1"
@@ -433,36 +430,38 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-.v-card__title {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-.v-card__text {
-  height: calc(100vh - 46px);
-}
-.v-list-item {
-  min-height: 32px;
-  .history-text {
-    padding-top: 4px;
-    padding-bottom: 4px;
+.clipboard-history {
+  .v-card-title {
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
-  .history-row {
-    margin-top: 5px !important;
-    margin-bottom: 3px !important;
-    margin-right: 8px !important;
+  .v-card-text {
+    height: calc(100vh - 46px);
   }
-  .history-action {
-    display: none;
-    margin-top: 5px !important;
-    margin-bottom: 3px !important;
-  }
-  &:hover {
+  .v-list-item {
+    min-height: 32px;
+    .history-text {
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+    .history-row {
+      margin-top: 5px !important;
+      margin-bottom: 3px !important;
+      margin-right: 8px !important;
+    }
     .history-action {
-      display: inline-flex;
+      display: none;
+      margin-top: 5px !important;
+      margin-bottom: 3px !important;
+    }
+    &:hover {
+      .history-action {
+        display: inline-flex;
+      }
     }
   }
-}
-.scroll-behavior-smooth {
-  scroll-behavior: smooth;
+  .scroll-behavior-smooth {
+    scroll-behavior: smooth;
+  }
 }
 </style>
