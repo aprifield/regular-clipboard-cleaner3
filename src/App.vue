@@ -29,7 +29,7 @@ const onClipboardEscapeKeyDown = () => {
 };
 
 const onClipboardSettingsChange = (settings: Settings) => {
-  window.ipcBridge.send('web-settings-change', settings);
+  window.ipcBridge.send('web-settings-change', { settings });
 };
 
 onMounted(() => {

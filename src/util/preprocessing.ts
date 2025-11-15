@@ -1,6 +1,6 @@
 import { PreprocessingHistoryEvent } from '@/types/history-event';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// @ts-ignore
 const dummy = (text: string, event: PreprocessingHistoryEvent) => {
   const addPrefix = (prefix: string | number) => {
     const map = (str: string, index: number, lines: string[]) =>
@@ -11,10 +11,7 @@ const dummy = (text: string, event: PreprocessingHistoryEvent) => {
         : prefix + str;
     const eol = text.match(/\r\n|\n|\r/);
     return eol
-      ? text
-          .split(eol[0])
-          .map(map)
-          .join(eol[0])
+      ? text.split(eol[0]).map(map).join(eol[0])
       : map(text, 0, [text]);
   };
 
@@ -31,7 +28,7 @@ const dummy = (text: string, event: PreprocessingHistoryEvent) => {
     return text.replace(/_(.)/g, (match, p1) => p1.toUpperCase()); // To camelCase
   }
   if (event.key === 's' || event.key === 'S') {
-    text = text.replace(/([A-Z])/g, match => '_' + match.toLowerCase()); // To snake_case
+    text = text.replace(/([A-Z])/g, (match) => '_' + match.toLowerCase()); // To snake_case
     return event.key === 'S' ? text.toUpperCase() : text;
   }
   if (event.key === 'q' || event.shiftKey) {
@@ -56,10 +53,7 @@ export default String.raw`(text: string, event: PreprocessingHistoryEvent) => {
         : prefix + str;
     const eol = text.match(/\r\n|\n|\r/);
     return eol
-      ? text
-          .split(eol[0])
-          .map(map)
-          .join(eol[0])
+      ? text.split(eol[0]).map(map).join(eol[0])
       : map(text, 0, [text]);
   };
 
@@ -76,7 +70,7 @@ export default String.raw`(text: string, event: PreprocessingHistoryEvent) => {
     return text.replace(/_(.)/g, (match, p1) => p1.toUpperCase()); // To camelCase
   }
   if (event.key === 's' || event.key === 'S') {
-    text = text.replace(/([A-Z])/g, match => '_' + match.toLowerCase()); // To snake_case
+    text = text.replace(/([A-Z])/g, (match) => '_' + match.toLowerCase()); // To snake_case
     return event.key === 'S' ? text.toUpperCase() : text;
   }
   if (event.key === 'q' || event.shiftKey) {

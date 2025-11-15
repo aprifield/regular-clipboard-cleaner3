@@ -1,7 +1,7 @@
 import path from 'node:path';
 // import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import { HistoryEvent } from '@/types/history-event';
 import { Settings } from '@/types/settings';
 import './background/clipboard-cleaner';
@@ -9,7 +9,12 @@ import { sendToWebContents } from './background/main-helper';
 import {
   getSettings,
   getWindowSettings,
+  setSettings,
 } from './background/electron-store-helper';
+import { iconPath } from './background/static-helper';
+import './background/app-tray-helper';
+// import './background/app-menu-helper'; // FIXME
+import { deleteAllHistory } from './background/clipboard-cleaner';
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,27 +46,59 @@ let historyWin: BrowserWindow | null;
 let settingsWin: BrowserWindow | null = null;
 
 function createWindow(mode: 'history' | 'settings') {
-  historyWin = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+  const win = new BrowserWindow({
+    icon: iconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   });
+  if (mode === 'settings') {
+    settingsWin = win;
+    // showDockIcon(); // FIXME
+  } else {
+    historyWin = win;
+  }
 
   // Test active push message to Renderer-process.
-  historyWin.webContents.on('did-finish-load', () => {
+  win.webContents.on('did-finish-load', () => {
     historyWin?.webContents.send(
-      'main-process-message',
+      'main-process-message', // FIXME
       new Date().toLocaleString()
     );
   });
 
+  const params = [
+    `mode=${mode}`,
+    `locale=${app.getLocale()}`,
+    `platform=${process.platform}`,
+  ].join('&');
   if (VITE_DEV_SERVER_URL) {
-    historyWin.loadURL(VITE_DEV_SERVER_URL);
+    win.loadURL(`${VITE_DEV_SERVER_URL}?${params}`);
   } else {
     // win.loadFile('dist/index.html')
-    historyWin.loadFile(path.join(RENDERER_DIST, 'index.html'));
+    win.loadFile(path.join(RENDERER_DIST, `index.html?${params}`));
   }
+
+  const _setWindowSettings = () => {
+    // setWindowSettings(mode, win.getBounds()); // FIXME
+  };
+
+  win.on('closed', () => {
+    if (mode === 'settings') {
+      settingsWin = null;
+      // switchDockIcon(); // FIXME
+    } else {
+      historyWin = null;
+    }
+  });
+
+  win.on('moved', () => {
+    _setWindowSettings();
+  });
+
+  win.on('resized', () => {
+    _setWindowSettings();
+  });
 }
 
 async function showOrCreateWindow(mode: 'history' | 'settings') {
@@ -69,43 +106,43 @@ async function showOrCreateWindow(mode: 'history' | 'settings') {
   if (win) {
     const settings = getSettings();
     const windowSettings = getWindowSettings(mode);
-    //     const bounds = {
-    //       ...win.getBounds(),
-    //       ...windowSettings,
-    //     };
-    //     if (mode === 'history' && settings.showNearCursor) {
-    //       const point = screen.getCursorScreenPoint();
-    //       bounds.x = point.x;
-    //       bounds.y = point.y;
-    //     }
-    //     const display = screen.getDisplayNearestPoint(bounds);
-    //     const displayLeft = display.workArea.x;
-    //     const displayRight = display.workArea.x + display.workArea.width;
-    //     const displayTop = display.workArea.y;
-    //     const displayBottom = display.workArea.y + display.workArea.height;
-    //     if (displayRight < bounds.x + bounds.width) {
-    //       bounds.x -= bounds.x + bounds.width - displayRight;
-    //     }
-    //     if (bounds.x < displayLeft) {
-    //       bounds.x = displayLeft;
-    //     }
-    //     if (displayBottom < bounds.y + bounds.height) {
-    //       bounds.y -= bounds.y + bounds.height - displayBottom;
-    //     }
-    //     if (bounds.y < displayTop) {
-    //       bounds.y = displayTop;
-    //     }
-    //     win.setOpacity(0);
-    //     win.show(); // When minimized, show must be run before setBounds
-    //     const setBounds: 'setBounds' | 'setContentBounds' =
-    //       mode === 'history' && settings.showNearCursor
-    //         ? 'setContentBounds'
-    //         : 'setBounds';
-    //     win[setBounds](bounds);
-    //     win[setBounds](bounds); // When using multiple displays, a single position adjustment will not display the correct position
-    //     setTimeout(() => {
-    //       win.setOpacity(1);
-    //     });
+    const bounds = {
+      ...win.getBounds(),
+      ...windowSettings,
+    };
+    if (mode === 'history' && settings.showNearCursor) {
+      const point = screen.getCursorScreenPoint();
+      bounds.x = point.x;
+      bounds.y = point.y;
+    }
+    const display = screen.getDisplayNearestPoint(bounds);
+    const displayLeft = display.workArea.x;
+    const displayRight = display.workArea.x + display.workArea.width;
+    const displayTop = display.workArea.y;
+    const displayBottom = display.workArea.y + display.workArea.height;
+    if (displayRight < bounds.x + bounds.width) {
+      bounds.x -= bounds.x + bounds.width - displayRight;
+    }
+    if (bounds.x < displayLeft) {
+      bounds.x = displayLeft;
+    }
+    if (displayBottom < bounds.y + bounds.height) {
+      bounds.y -= bounds.y + bounds.height - displayBottom;
+    }
+    if (bounds.y < displayTop) {
+      bounds.y = displayTop;
+    }
+    win.setOpacity(0);
+    win.show(); // When minimized, show must be run before setBounds
+    const setBounds: 'setBounds' | 'setContentBounds' =
+      mode === 'history' && settings.showNearCursor
+        ? 'setContentBounds'
+        : 'setBounds';
+    win[setBounds](bounds);
+    win[setBounds](bounds); // When using multiple displays, a single position adjustment will not display the correct position
+    setTimeout(() => {
+      win.setOpacity(1);
+    });
   } else {
     createWindow(mode);
   }
@@ -157,41 +194,43 @@ ipcMain
   //   })
   //   .on('web-delete-click', (event, [text]: [string]) => {
   //     // deleteHistory(text);
-  //     // sendToWebContents();
+  //     // sendToWebContents(historyWin, settingsWin);
   //   })
-  //   .on('web-settings-change', (event, [settings]: [Settings]) => {
-  //     // if (historyWin) {
-  //     //   if (getSettings().showFrame !== settings.showFrame) {
-  //     //     historyWin.close();
-  //     //   }
-  //     // }
-  //     // setSettings(settings);
-  //     // restartMonitoring();
-  //     // registerShortcut();
-  //     // setOpenAtLogin();
-  //     // switchTaskbarIcon(historyWin);
-  //     // sendToWebContents();
-  //   })
-  //   .on('app-menu-settings-click', () => {
-  //     // showOrCreateWindow('settings');
-  //   })
+  .on('web-settings-change', (event, { settings }: { settings: Settings }) => {
+    console.log('settings', settings); // FIXME
+    if (historyWin) {
+      if (getSettings().showFrame !== settings.showFrame) {
+        historyWin.close();
+      }
+    }
+    setSettings(settings);
+    // restartMonitoring(); // FIXME
+    // registerShortcut();
+    // setOpenAtLogin();
+    // switchTaskbarIcon(historyWin);
+    sendToWebContents(historyWin, settingsWin);
+  })
+  // .on('app-menu-settings-click', () => {
+  //   console.log('xxxxxxxxxxxxxxxxxxxx');
+  //   showOrCreateWindow('settings');
+  // })
   //   .on('app-menu-delete-all-history-click', () => {
   //     // deleteAllHistory();
-  //     // sendToWebContents();
+  //     // sendToWebContents(historyWin, settingsWin);
   //   })
-  //   .on('app-tray-history-click', () => {
-  //     // showOrCreateWindow('history');
-  //   })
-  //   .on('app-tray-settings-click', () => {
-  //     //showOrCreateWindow('settings');
-  //   })
-  //   .on('app-tray-delete-all-history-click', () => {
-  //     // deleteAllHistory();
-  //     // sendToWebContents();
-  //   })
-  //   .on('app-tray-exit-click', () => {
-  //     //app.quit();
-  //   })
+  .on('app-tray-history-click', () => {
+    showOrCreateWindow('history');
+  })
+  .on('app-tray-settings-click', () => {
+    showOrCreateWindow('settings');
+  })
+  .on('app-tray-delete-all-history-click', () => {
+    deleteAllHistory();
+    sendToWebContents(historyWin, settingsWin);
+  })
+  .on('app-tray-exit-click', () => {
+    app.quit();
+  })
   //   .on('global-shortcut-focus', () => {
   //     //showOrCreateWindow('history');
   //   })

@@ -33,7 +33,15 @@ const keys = computed(() => {
 });
 
 const onClipboardSettingsChange = (setting: Settings) => {
-  emit('clipboard-settings-change', { ...props.settings, ...setting });
+  console.log('emit-value', { ...props.settings, ...setting }); // FIXME
+  console.log(
+    'emit-value',
+    JSON.parse(JSON.stringify({ ...props.settings, ...setting })) // FIXME
+  );
+  emit(
+    'clipboard-settings-change',
+    JSON.parse(JSON.stringify({ ...props.settings, ...setting }))
+  );
 };
 </script>
 
@@ -42,24 +50,28 @@ const onClipboardSettingsChange = (setting: Settings) => {
     <v-card flat>
       <v-card-text>
         <v-container>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 hide-details
                 :label="__('settings.startAtLogin')"
-                :input-value="settings.startAtLogin"
-                @change="onClipboardSettingsChange({ startAtLogin: $event })"
+                :model-value="settings.startAtLogin"
+                @update:model-value="
+                  onClipboardSettingsChange({ startAtLogin: !!$event })
+                "
               >
               </v-switch>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 hide-details
                 :label="__('settings.maintained')"
                 :input-value="settings.maintained"
-                @change="onClipboardSettingsChange({ maintained: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ maintained: !!$event })
+                "
               >
               </v-switch>
             </v-col>
@@ -67,7 +79,7 @@ const onClipboardSettingsChange = (setting: Settings) => {
         </v-container>
         <v-divider class="my-2"></v-divider>
         <v-container>
-          <v-row align="center">
+          <v-row>
             <v-col cols="12" sm="6">
               <v-text-field
                 hide-details
@@ -77,7 +89,7 @@ const onClipboardSettingsChange = (setting: Settings) => {
                 :rules="[rules.clearInterval.rule]"
                 :suffix="__('settings.seconds')"
                 type="number"
-                :value="rules.clearInterval.value(settings.clearInterval)"
+                :model-value="rules.clearInterval.value(settings.clearInterval)"
                 @change="onClipboardSettingsChange({ clearInterval: +$event })"
               >
               </v-text-field>
@@ -91,7 +103,9 @@ const onClipboardSettingsChange = (setting: Settings) => {
                 :rules="[rules.monitorInterval.rule]"
                 :suffix="__('settings.seconds')"
                 type="number"
-                :value="rules.monitorInterval.value(settings.monitorInterval)"
+                :model-value="
+                  rules.monitorInterval.value(settings.monitorInterval)
+                "
                 @change="
                   onClipboardSettingsChange({ monitorInterval: +$event })
                 "
@@ -99,7 +113,7 @@ const onClipboardSettingsChange = (setting: Settings) => {
               </v-text-field>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col cols="12" sm="6">
               <v-text-field
                 hide-details
@@ -108,7 +122,9 @@ const onClipboardSettingsChange = (setting: Settings) => {
                 :max="rules.maxHistoryCount.max"
                 :rules="[rules.maxHistoryCount.rule]"
                 type="number"
-                :value="rules.maxHistoryCount.value(settings.maxHistoryCount)"
+                :model-value="
+                  rules.maxHistoryCount.value(settings.maxHistoryCount)
+                "
                 @change="
                   onClipboardSettingsChange({ maxHistoryCount: +$event })
                 "
@@ -123,7 +139,7 @@ const onClipboardSettingsChange = (setting: Settings) => {
                 :max="rules.maxTextLength.max"
                 :rules="[rules.maxTextLength.rule]"
                 type="number"
-                :value="rules.maxTextLength.value(settings.maxTextLength)"
+                :model-value="rules.maxTextLength.value(settings.maxTextLength)"
                 @change="onClipboardSettingsChange({ maxTextLength: +$event })"
               >
               </v-text-field>
@@ -132,10 +148,10 @@ const onClipboardSettingsChange = (setting: Settings) => {
         </v-container>
         <v-divider class="my-2"></v-divider>
         <v-container>
-          <v-row align="center">
+          <v-row>
             <v-col>{{ __('settings.shortcutComment') }}</v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col cols="12" sm="3">
               <v-checkbox
                 hide-details
@@ -192,14 +208,14 @@ const onClipboardSettingsChange = (setting: Settings) => {
         </v-container>
         <v-divider class="my-2"></v-divider>
         <v-container>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-expansion-panels flat>
                 <v-expansion-panel>
-                  <v-expansion-panel-header>
+                  <v-expansion-panel-title>
                     {{ __('settings.preprocessing') }}
-                  </v-expansion-panel-header>
-                  <v-expansion-panel-content>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
                     <v-textarea
                       auto-grow
                       hide-details
@@ -211,30 +227,34 @@ const onClipboardSettingsChange = (setting: Settings) => {
                       "
                     >
                     </v-textarea>
-                  </v-expansion-panel-content>
+                  </v-expansion-panel-text>
                 </v-expansion-panel>
               </v-expansion-panels>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 hide-details
                 :label="__('settings.closeAfterCopy')"
                 :input-value="settings.closeAfterCopy"
-                @change="onClipboardSettingsChange({ closeAfterCopy: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ closeAfterCopy: !!$event })
+                "
               >
               </v-switch>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col cols="12" sm="6">
               <v-switch
                 :disabled="platform === 'darwin'"
                 hide-details
                 :label="__('settings.pasteAfterCopy')"
                 :input-value="settings.pasteAfterCopy"
-                @change="onClipboardSettingsChange({ pasteAfterCopy: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ pasteAfterCopy: !!$event })
+                "
               >
               </v-switch>
               <span v-if="platform === 'darwin'" class="text-caption">
@@ -262,7 +282,7 @@ const onClipboardSettingsChange = (setting: Settings) => {
               </v-text-field>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col cols="12" sm="6">
               <v-text-field
                 hide-details
@@ -300,7 +320,7 @@ const onClipboardSettingsChange = (setting: Settings) => {
         </v-container>
         <v-divider class="my-2"></v-divider>
         <v-container>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 hide-details
@@ -311,25 +331,29 @@ const onClipboardSettingsChange = (setting: Settings) => {
               </v-switch>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 hide-details
                 :label="__('settings.showFrame')"
                 :input-value="settings.showFrame"
-                @change="onClipboardSettingsChange({ showFrame: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ showFrame: !!$event })
+                "
               >
               </v-switch>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 v-if="platform === 'darwin'"
                 hide-details
                 :label="__('settings.showDockIcon')"
                 :input-value="settings.showDockIcon"
-                @change="onClipboardSettingsChange({ showDockIcon: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ showDockIcon: !!$event })
+                "
               >
               </v-switch>
               <v-switch
@@ -337,18 +361,22 @@ const onClipboardSettingsChange = (setting: Settings) => {
                 hide-details
                 :label="__('settings.showTaskbarIcon')"
                 :input-value="settings.showTaskbarIcon"
-                @change="onClipboardSettingsChange({ showTaskbarIcon: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ showTaskbarIcon: !!$event })
+                "
               >
               </v-switch>
             </v-col>
           </v-row>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-switch
                 hide-details
                 :label="__('settings.darkTheme')"
                 :input-value="settings.darkTheme"
-                @change="onClipboardSettingsChange({ darkTheme: $event })"
+                @update:model-value="
+                  onClipboardSettingsChange({ darkTheme: !!$event })
+                "
               >
               </v-switch>
             </v-col>
@@ -356,15 +384,15 @@ const onClipboardSettingsChange = (setting: Settings) => {
         </v-container>
         <v-divider class="my-2"></v-divider>
         <v-container>
-          <v-row align="center">
+          <v-row>
             <v-col>
               <v-expansion-panels flat>
                 <v-expansion-panel>
-                  <v-expansion-panel-header>
+                  <v-expansion-panel-title>
                     {{ __('settings.blockList') }}
-                  </v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <v-combobox
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <!-- <v-combobox
                       :value="settings.blockList || []"
                       :append-icon="null"
                       hide-details
@@ -396,8 +424,17 @@ const onClipboardSettingsChange = (setting: Settings) => {
                           </v-icon>
                         </v-chip>
                       </template>
+                    </v-combobox> -->
+                    <v-combobox
+                      :model-value="settings.blockList || []"
+                      hide-details
+                      label="Block list"
+                      placeholder="123456, password, qwerty"
+                      multiple
+                      outlined
+                    >
                     </v-combobox>
-                  </v-expansion-panel-content>
+                  </v-expansion-panel-text>
                 </v-expansion-panel>
               </v-expansion-panels>
             </v-col>

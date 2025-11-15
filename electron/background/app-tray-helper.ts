@@ -1,6 +1,6 @@
 import { app, Menu, Tray, ipcMain } from 'electron';
-import path from 'path';
 import { loadDictionary, translate as __ } from '@/util/i18n';
+import { iconPath } from './static-helper';
 
 // https://www.electronjs.org/docs/faq#my-apps-tray-disappeared-after-a-few-minutes
 let tray: Tray | null = null;
@@ -11,28 +11,23 @@ app.whenReady().then(() => {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: __('tray.clipboardHistory'),
-      click: () => ipcMain.emit('app-tray-history-click')
+      click: () => ipcMain.emit('app-tray-history-click'),
     },
     {
       label: __('tray.deleteAllHistory'),
-      click: () => ipcMain.emit('app-tray-delete-all-history-click')
+      click: () => ipcMain.emit('app-tray-delete-all-history-click'),
     },
     {
       label: __('tray.settings'),
-      click: () => ipcMain.emit('app-tray-settings-click')
+      click: () => ipcMain.emit('app-tray-settings-click'),
     },
     {
       label: __('tray.exit'),
-      click: () => ipcMain.emit('app-tray-exit-click')
-    }
+      click: () => ipcMain.emit('app-tray-exit-click'),
+    },
   ]);
 
-  tray = new Tray(
-    path.join(
-      __static,
-      process.platform === 'win32' ? 'icon.ico' : 'icon-16x16.png'
-    )
-  );
+  tray = new Tray(iconPath());
   tray.setContextMenu(contextMenu);
   tray.setToolTip(app.getName());
   tray.on('click', () => {
