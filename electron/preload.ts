@@ -1,4 +1,4 @@
-import { ipcRenderer, contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 if (false) {
   // --------- Expose some API to the Renderer process ---------

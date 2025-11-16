@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build && electron-builder",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src electron --ext .js,.ts,.vue"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",

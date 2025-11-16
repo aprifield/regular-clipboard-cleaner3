@@ -1,4 +1,4 @@
-import { PreprocessingHistoryEvent } from '@/types/history-event';
+import type { PreprocessingHistoryEvent } from '@/types/history-event';
 
 // @ts-ignore
 const dummy = (text: string, event: PreprocessingHistoryEvent) => {

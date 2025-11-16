@@ -1,11 +1,12 @@
+import type {
+  MenuItemConstructorOptions } from 'electron';
 import {
   app,
   ipcMain,
   Menu,
-  MenuItemConstructorOptions,
   shell
 } from 'electron';
-import { loadDictionary, translate as __ } from '@/util/i18n';
+import { translate as __, loadDictionary } from '@/util/i18n';
 
 // https://www.electronjs.org/docs/api/menu
 
@@ -26,7 +27,7 @@ app.whenReady().then(() => {
                 label: __('menu.settings'),
                 click: () => {
                   ipcMain.emit('app-menu-settings-click');
-                }
+                },
               },
               { type: 'separator' },
               { role: 'services', label: __('menu.services') },
@@ -35,9 +36,9 @@ app.whenReady().then(() => {
               { role: 'hideothers', label: __('menu.hideothers') },
               { role: 'unhide', label: __('menu.unhide') },
               { type: 'separator' },
-              { role: 'quit', label: __('menu.quitForMac', app.getName()) }
-            ]
-          }
+              { role: 'quit', label: __('menu.quitForMac', app.getName()) },
+            ],
+          },
         ]
       : []),
     {
@@ -48,11 +49,11 @@ app.whenReady().then(() => {
         : [
             {
               label: __('menu.settings'),
-              click: () => ipcMain.emit('app-menu-settings-click')
+              click: () => ipcMain.emit('app-menu-settings-click'),
             },
             { type: 'separator' },
-            { role: 'quit', label: __('menu.quit') }
-          ]
+            { role: 'quit', label: __('menu.quit') },
+          ],
     },
     {
       role: 'editMenu',
@@ -60,9 +61,9 @@ app.whenReady().then(() => {
       submenu: [
         {
           label: __('menu.deleteAllHistory'),
-          click: () => ipcMain.emit('app-menu-delete-all-history-click')
-        }
-      ]
+          click: () => ipcMain.emit('app-menu-delete-all-history-click'),
+        },
+      ],
     },
     {
       role: 'viewMenu',
@@ -75,8 +76,8 @@ app.whenReady().then(() => {
         { role: 'zoomIn', label: __('menu.zoomIn') },
         { role: 'zoomOut', label: __('menu.zoomOut') },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: __('menu.togglefullscreen') }
-      ]
+        { role: 'togglefullscreen', label: __('menu.togglefullscreen') },
+      ],
     },
     {
       role: 'windowMenu',
@@ -85,8 +86,8 @@ app.whenReady().then(() => {
         { role: 'minimize', label: __('menu.minimize') },
         ...(isMac //
           ? [{ role: 'zoom', label: __('menu.zoom') }]
-          : [{ role: 'close', label: __('menu.close') }])
-      ]
+          : [{ role: 'close', label: __('menu.close') }]),
+      ],
     },
     {
       role: 'help',
@@ -98,10 +99,10 @@ app.whenReady().then(() => {
             await shell.openExternal(
               'https://github.com/aprifield/regular-clipboard-cleaner'
             );
-          }
-        }
-      ]
-    }
+          },
+        },
+      ],
+    },
   ] as MenuItemConstructorOptions[];
 
   const menu = Menu.buildFromTemplate(template);

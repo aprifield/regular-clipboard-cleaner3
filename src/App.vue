@@ -3,34 +3,36 @@ import type { HistoryEvent } from '@/types/history-event';
 import type { HistoryItem } from '@/types/history-item';
 import type { Settings } from '@/types/settings';
 import { onMounted, ref } from 'vue';
+import { useTheme } from 'vuetify';
 import ClipboardHistory from '@/components/ClipboardHistory.vue';
 import ClipboardSettings from '@/components/ClipboardSettings.vue';
 
+const theme = useTheme();
 const mode = ref('history');
 const locale = ref('en');
 const platform = ref('win32');
 const historyItems = ref<HistoryItem[]>([]);
 const settings = ref<Settings>({});
 
-const onClipboardListItemClick = (text: string, event: HistoryEvent) => {
+function onClipboardListItemClick(text: string, event: HistoryEvent) {
   window.ipcBridge.send('web-list-item-click', text, event);
-};
+}
 
-const onClipboardDeleteClick = (text: string) => {
+function onClipboardDeleteClick(text: string) {
   window.ipcBridge.send('web-delete-click', text);
-};
+}
 
-const onClipboardEnterKeyDown = (text: string, event: HistoryEvent) => {
+function onClipboardEnterKeyDown(text: string, event: HistoryEvent) {
   window.ipcBridge.send('web-enter-keydown', text, event);
-};
+}
 
-const onClipboardEscapeKeyDown = () => {
+function onClipboardEscapeKeyDown() {
   window.ipcBridge.send('web-escape-keydown');
-};
+}
 
-const onClipboardSettingsChange = (settings: Settings) => {
+function onClipboardSettingsChange(settings: Settings) {
   window.ipcBridge.send('web-settings-change', { settings });
-};
+}
 
 onMounted(() => {
   window.ipcBridge.send('web-app-mounted', {
@@ -50,7 +52,7 @@ onMounted(() => {
   });
   window.ipcBridge.on('init-settings', (event, args) => {
     settings.value = args;
-    // this.$vuetify.theme.dark = !!settings.value.darkTheme; // FIXME for dark mode
+    theme.change(settings.value.darkTheme ? 'dark' : 'light');
     const html = document.querySelector('html') as HTMLHtmlElement;
     if (mode.value === 'history') {
       html.classList.add('overflow-hidden');

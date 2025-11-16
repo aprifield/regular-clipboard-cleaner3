@@ -1,7 +1,8 @@
 // let historyWin: BrowserWindow | null;
 // let settingsWin: BrowserWindow | null;
 
-import { BrowserWindow, nativeTheme } from 'electron';
+import type { BrowserWindow } from 'electron';
+import { nativeTheme } from 'electron';
 import {
   getHistoryItems,
   getSettings,
@@ -201,10 +202,10 @@ import {
 //   }
 // }
 
-export const sendToWebContents = (
+export function sendToWebContents(
   historyWin: BrowserWindow | null,
   settingsWin: BrowserWindow | null
-) => {
+) {
   const historyItems = getHistoryItems();
   const settings = getSettings();
   if (settings.darkTheme === undefined) {
@@ -219,7 +220,7 @@ export const sendToWebContents = (
     settingsWin.webContents.send('init-history', historyItems);
     settingsWin.webContents.send('init-settings', settings);
   }
-};
+}
 
 // const copyTextAndPostProcess = (text: string, historyEvent: HistoryEvent) => {
 //   const settings = getSettings();

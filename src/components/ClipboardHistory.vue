@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HistoryEvent } from '@/types/history-event';
+import type { HistoryEvent } from '@/types/history-event';
 import type { HistoryItem } from '@/types/history-item';
 import type { Settings } from '@/types/settings';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -52,16 +52,14 @@ const currentHistoryItems = computed<TableHistoryItem[]>(() => {
   if (search.value) {
     const wordRegExps = search.value
       .split(' ')
-      .filter((word) => word)
-      .map((word) => word.replace(/[.*+?^=!:${}()|[\]/\\]/g, '\\$&'))
-      .map((word) => new RegExp(word, 'i'));
-    if (wordRegExps.length) {
-      return tableHistoryItems.value.filter((item) =>
-        wordRegExps.every((re) => re.test(item.text))
-      );
-    } else {
-      return tableHistoryItems.value;
-    }
+      .filter(Boolean)
+      .map(word => word.replace(/[.*+?^=!:${}()|[\]/\\]/g, String.raw`\$&`))
+      .map(word => new RegExp(word, 'i'));
+    return wordRegExps.length > 0
+      ? tableHistoryItems.value.filter(item =>
+          wordRegExps.every(re => re.test(item.text))
+        )
+      : tableHistoryItems.value;
   } else {
     return tableHistoryItems.value;
   }
@@ -71,65 +69,63 @@ const tooltipHistoryEvent = computed<HistoryEvent>(() => {
   return createHistoryEvent();
 });
 
-const initStatus = () => {
+function initStatus() {
   search.value = '';
   selectedIndex.value = -1;
   keyboardEvents.value = [];
   copyEventParams.value = undefined;
-};
+}
 
-const createHistoryEvent = (): HistoryEvent => {
-  const event = keyboardEvents.value[keyboardEvents.value.length - 1];
-  if (event) {
-    return {
-      altKey: event.altKey,
-      code: event.code,
-      ctrlKey: event.ctrlKey,
-      key: event.key,
-      metaKey: event.metaKey,
-      shiftKey: event.shiftKey,
-      events: keyboardEvents.value.map((e) => ({
-        altKey: e.altKey,
-        code: e.code,
-        ctrlKey: e.ctrlKey,
-        key: e.key,
-        metaKey: e.metaKey,
-        shiftKey: e.shiftKey,
-      })),
-    };
-  } else {
-    return {
-      altKey: false,
-      code: undefined,
-      ctrlKey: false,
-      key: undefined,
-      metaKey: false,
-      shiftKey: false,
-      events: [],
-    };
-  }
-};
-const focusInTextField = () => {
+function createHistoryEvent(): HistoryEvent {
+  const event = keyboardEvents.value.at(-1);
+  return event
+    ? {
+        altKey: event.altKey,
+        code: event.code,
+        ctrlKey: event.ctrlKey,
+        key: event.key,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey,
+        events: keyboardEvents.value.map(e => ({
+          altKey: e.altKey,
+          code: e.code,
+          ctrlKey: e.ctrlKey,
+          key: e.key,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey,
+        })),
+      }
+    : {
+        altKey: false,
+        code: undefined,
+        ctrlKey: false,
+        key: undefined,
+        metaKey: false,
+        shiftKey: false,
+        events: [],
+      };
+}
+function focusInTextField() {
   if (!isTextFieldFocused.value) {
     (textField.value!.$el.querySelector('input') as HTMLInputElement).focus();
   }
-};
+}
 
-const focusOutTextField = () => {
+function focusOutTextField() {
   if (isTextFieldFocused.value) {
     (textField.value!.$el.querySelector('input') as HTMLInputElement).blur();
   }
-};
+}
 
-const tryEmitCopyEvent = (params: CopyEventParams) => {
-  if (keyboardEvents.value.length) {
+function tryEmitCopyEvent(params: CopyEventParams) {
+  if (keyboardEvents.value.length > 0) {
     copyEventParams.value = params;
   } else {
     emitCopyEvent(params);
   }
-};
+}
 
-const emitCopyEvent = (params: CopyEventParams) => {
+function emitCopyEvent(params: CopyEventParams) {
   console.log('CopyEventParams', params);
   // FIXME impl
   // this.$emit(
@@ -138,18 +134,18 @@ const emitCopyEvent = (params: CopyEventParams) => {
   //   params.historyEvent
   // );
   initStatus();
-};
+}
 
-const adjustScrollPositionAndFindTargetRow = async (targetIndex: number) => {
-  const offset =
-    historyItemHeight.value * (maxVisibleItemCount.value + 1) -
-    historyContainerHeight.value;
+async function adjustScrollPositionAndFindTargetRow(targetIndex: number) {
+  const offset
+    = historyItemHeight.value * (maxVisibleItemCount.value + 1)
+      - historyContainerHeight.value;
 
   const visibleScrollRange = [
     targetIndex < maxVisibleItemCount.value
       ? 0
-      : (targetIndex - maxVisibleItemCount.value) * historyItemHeight.value +
-        offset,
+      : (targetIndex - maxVisibleItemCount.value) * historyItemHeight.value
+        + offset,
     targetIndex * historyItemHeight.value,
   ];
 
@@ -178,30 +174,30 @@ const adjustScrollPositionAndFindTargetRow = async (targetIndex: number) => {
       console.log('[ClipboardHistory] find target row failed.', retryCount);
     });
   });
-};
+}
 
-const onSearchInput = (str: string) => {
+function onSearchInput(str: string) {
   window.clearTimeout(searchTimeoutId.value);
   searchTimeoutId.value = window.setTimeout(() => {
     search.value = str;
     selectedIndex.value = -1;
   }, 300);
-};
+}
 
-const onListItemClick = (text: string) => {
+function onListItemClick(text: string) {
   tryEmitCopyEvent({
     eventName: 'clipboard-list-item-click',
     text,
     historyEvent: createHistoryEvent(),
   });
-};
+}
 
-const onDeleteClick = (text: string) => {
+function onDeleteClick(text: string) {
   emit('clipboard-delete-click', text);
   selectedIndex.value = -1;
-};
+}
 
-const onWindowKeyDown = async (event: KeyboardEvent) => {
+async function onWindowKeyDown(event: KeyboardEvent) {
   if (event.isComposing) {
     return;
   }
@@ -224,17 +220,17 @@ const onWindowKeyDown = async (event: KeyboardEvent) => {
     focusInTextField();
     selectedIndex.value = -1;
   } else if (
-    event.code === 'Home' ||
-    event.code === 'End' ||
-    event.code === 'PageUp' ||
-    event.code === 'PageDown' ||
-    event.code === 'ArrowUp' ||
-    event.code === 'ArrowDown' ||
-    event.code === 'Tab'
+    event.code === 'Home'
+    || event.code === 'End'
+    || event.code === 'PageUp'
+    || event.code === 'PageDown'
+    || event.code === 'ArrowUp'
+    || event.code === 'ArrowDown'
+    || event.code === 'Tab'
   ) {
     if (
-      (event.code === 'Home' || event.code === 'End') &&
-      isTextFieldFocused.value
+      (event.code === 'Home' || event.code === 'End')
+      && isTextFieldFocused.value
     ) {
       return;
     }
@@ -246,21 +242,21 @@ const onWindowKeyDown = async (event: KeyboardEvent) => {
 
     let targetSelectedIndex = -1;
     if (event.code === 'Home' || event.code === 'End') {
-      targetSelectedIndex =
-        event.code === 'Home' ? 0 : currentHistoryItems.value.length - 1;
+      targetSelectedIndex
+        = event.code === 'Home' ? 0 : currentHistoryItems.value.length - 1;
     } else if (event.code === 'PageUp' || event.code === 'PageDown') {
-      targetSelectedIndex =
-        (selectedIndex.value === -1 ? 0 : selectedIndex.value) +
-        (event.code === 'PageUp'
+      targetSelectedIndex
+        = (selectedIndex.value === -1 ? 0 : selectedIndex.value)
+          + (event.code === 'PageUp'
           ? -maxVisibleItemCount.value
           : maxVisibleItemCount.value);
       if (!currentHistoryItems.value[targetSelectedIndex]) {
-        targetSelectedIndex =
-          event.code === 'PageUp' ? 0 : currentHistoryItems.value.length - 1;
+        targetSelectedIndex
+          = event.code === 'PageUp' ? 0 : currentHistoryItems.value.length - 1;
       }
     } else {
-      targetSelectedIndex =
-        event.code === 'ArrowUp' || (event.code === 'Tab' && event.shiftKey)
+      targetSelectedIndex
+        = event.code === 'ArrowUp' || (event.code === 'Tab' && event.shiftKey)
           ? selectedIndex.value - 1
           : selectedIndex.value + 1;
       if (selectedIndex.value === -1 || targetSelectedIndex === -1) {
@@ -272,38 +268,34 @@ const onWindowKeyDown = async (event: KeyboardEvent) => {
       const targetSelectedRow = await adjustScrollPositionAndFindTargetRow(
         targetSelectedIndex
       );
-      if (targetSelectedRow) {
-        selectedIndex.value = targetSelectedIndex;
-      } else {
-        selectedIndex.value = -1;
-      }
+      selectedIndex.value = targetSelectedRow ? targetSelectedIndex : -1;
     }
   } else {
-    if (!keyboardEvents.value.some((e) => e.code == event.code)) {
+    if (!keyboardEvents.value.some(e => e.code == event.code)) {
       keyboardEvents.value.push(event);
     }
   }
-};
+}
 
-const onWindowKeyUp = (event: KeyboardEvent) => {
+function onWindowKeyUp(event: KeyboardEvent) {
   keyboardEvents.value = keyboardEvents.value.filter(
-    (e) => e.code !== event.code
+    e => e.code !== event.code
   );
-  if (!keyboardEvents.value.length && copyEventParams.value) {
+  if (keyboardEvents.value.length === 0 && copyEventParams.value) {
     emitCopyEvent(copyEventParams.value);
   }
-};
+}
 
-const onWindowResize = () => {
+function onWindowResize() {
   const historyContainer = historyList.value!.$el.closest('.v-card-text');
   historyContainerHeight.value = historyContainer
     ? historyContainer.clientHeight
     : 300;
-};
+}
 
-const onWindowBlur = () => {
+function onWindowBlur() {
   keyboardEvents.value = [];
-};
+}
 
 watch(
   () => props.historyItems,
@@ -340,7 +332,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-container fluid class="clipboard-history pa-0">
+  <v-container class="clipboard-history pa-0" fluid>
     <v-card flat>
       <v-card-title>
         <v-text-field
@@ -351,34 +343,34 @@ onUnmounted(() => {
           label="Search"
           single-line
           :value="search"
-          @input="onSearchInput"
-          @focus="isTextFieldFocused = true"
           @blur="isTextFieldFocused = false"
-        ></v-text-field>
+          @focus="isTextFieldFocused = true"
+          @input="onSearchInput"
+        />
       </v-card-title>
       <v-card-text class="pa-0">
         <v-virtual-scroll
           ref="historyList"
           bench="1"
-          :items="currentHistoryItems"
           :height="historyContainerHeight"
           :item-height="historyItemHeight"
+          :items="currentHistoryItems"
         >
-          <template v-slot:default="{ item, index }">
+          <template #default="{ item, index }">
             <!--
               Don't use mouseenter or mouseover.
               Scrolling with the arrow keys returns the focus to the line where the cursor was placed.
               The same problem occurs when closing the screen by clicking on a line.
             -->
             <v-list-item
-              :key="`list-item-${index}`"
               :id="`clipboard-row-${index}`"
+              :key="`list-item-${index}`"
               class="v-list-item--link primary--text"
               :class="{ 'v-list-item--active': index === selectedIndex }"
               dense
               @click="onListItemClick(item.text)"
             >
-              <template v-slot:prepend>
+              <template #prepend>
                 <div class="history-row" @mousemove="selectedIndex = index">
                   <span
                     class="text-right secondary--text"
@@ -393,28 +385,29 @@ onUnmounted(() => {
                 @mousemove="selectedIndex = index"
               >
                 <ClipboardHistoryText
+                  :history-event="tooltipHistoryEvent"
+                  :settings="settings"
                   :text="item.text"
                   :time="item.time"
                   :tooltip="index === selectedIndex"
-                  :tooltipLineCount="Math.floor((maxVisibleItemCount * 2) / 3)"
-                  :historyEvent="tooltipHistoryEvent"
-                  :settings="settings"
+                  :tooltip-line-count="
+                    Math.floor((maxVisibleItemCount * 2) / 3)
+                  "
                 />
               </v-list-item-title>
-              <template v-slot:append>
+              <template #append>
                 <div
                   class="history-action"
                   title="Delete"
                   @mousemove="selectedIndex = index"
                 >
                   <v-btn
-                    icon
-                    x-small
+                    icon="mdi-trash-can-outline"
+                    size="x-small"
+                    variant="plain"
                     @click.stop="onDeleteClick(item.text)"
                     @mousedown.stop
-                  >
-                    <v-icon>mdi-trash-can-outline</v-icon>
-                  </v-btn>
+                  />
                 </div>
               </template>
             </v-list-item>

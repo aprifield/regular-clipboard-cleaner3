@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { HistoryEvent, PreprocessingHistoryEvent } from '@/types/history-event';
+import type {
+  HistoryEvent,
+  PreprocessingHistoryEvent
+} from '@/types/history-event';
 import type { Settings } from '@/types/settings';
 import { computed, ref, watch } from 'vue';
 import defaultPreprocessing from '@/util/preprocessing';
@@ -19,16 +22,14 @@ const isTooltipVisible = ref(false);
 const tooltipTimeoutId = ref(-1);
 
 const tooltipText = computed(() => {
-  const preprocessing = props.settings.preprocessing
-    ? props.settings.preprocessing
-    : defaultPreprocessing;
+  const preprocessing = props.settings.preprocessing || defaultPreprocessing;
 
   (props.historyEvent as PreprocessingHistoryEvent).preventPaste = () =>
     undefined;
   try {
-    return eval(`(${preprocessing})(this.text, this.historyEvent)`);
-  } catch (e) {
-    return e + '';
+    return eval(`(${preprocessing})(props.text, props.historyEvent)`);
+  } catch (error) {
+    return error + '';
   }
 });
 
@@ -53,14 +54,14 @@ watch(
 
 <template>
   <v-tooltip
-    bottom
     content-class="tooltip-content"
+    location="bottom"
+    :model-value="isTooltipVisible"
     open-delay="300"
     transition="fade-transition"
-    :value="isTooltipVisible"
   >
-    <template v-slot:activator="{ attrs }">
-      <span v-bind="attrs">{{ text }}</span>
+    <template #activator="{ props: activatorProps }">
+      <span v-bind="activatorProps">{{ props.text }}</span>
     </template>
     <div class="tooltip-caption">
       {{ new Date(time).toLocaleString() }}
@@ -69,28 +70,29 @@ watch(
     <v-divider class="my-1" />
     <div class="tooltip-text">
       <div
-        v-for="(text, row) in tooltipTexts"
-        :key="`row-${row}`"
+        v-for="(rowText, rowIndex) in tooltipTexts"
+        :key="`row-${rowIndex}`"
         class="tooltip-line"
       >
-        <template v-if="row < tooltipLineCount">
-          <template v-for="(char, col) in text">
+        <template v-if="rowIndex < tooltipLineCount">
+          <template v-for="(char, col) in rowText">
             <span
               v-if="char === ' ' || char === '\t'"
-              :key="`row-${row}-col-${col}`"
+              :key="`row-${rowIndex}-col-${col}`"
               class="tooltip-white-space"
-              >{{ char === ' ' ? space : tab }}</span
             >
+              {{ char === ' ' ? space : tab }}
+            </span>
             <template v-else>{{ char }}</template>
           </template>
           <v-icon
-            v-if="row < tooltipTexts.length - 1"
+            v-if="rowIndex < tooltipTexts.length - 1"
             class="tooltip-icon-return"
           >
             mdi-keyboard-return
           </v-icon>
         </template>
-        <v-icon v-else class="tooltip-icon-dots"> mdi-dots-horizontal </v-icon>
+        <v-icon v-else class="tooltip-icon-dots">mdi-dots-horizontal</v-icon>
       </div>
     </div>
   </v-tooltip>

@@ -1,6 +1,6 @@
-import { Rectangle } from 'electron';
-import { HistoryItem } from '@/types/history-item';
-import { Settings } from '@/types/settings';
+import type { Rectangle } from 'electron';
+import type { HistoryItem } from '@/types/history-item';
+import type { Settings } from '@/types/settings';
 import Store from 'electron-store';
 
 const clipboardStore = new Store<{ clipboard: HistoryItem[] }>({

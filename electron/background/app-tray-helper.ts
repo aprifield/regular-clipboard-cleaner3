@@ -1,5 +1,5 @@
-import { app, Menu, Tray, ipcMain } from 'electron';
-import { loadDictionary, translate as __ } from '@/util/i18n';
+import { app, ipcMain, Menu, Tray } from 'electron';
+import { translate as __, loadDictionary } from '@/util/i18n';
 import { iconPath } from './static-helper';
 
 // https://www.electronjs.org/docs/faq#my-apps-tray-disappeared-after-a-few-minutes

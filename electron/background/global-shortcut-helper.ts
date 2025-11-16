@@ -11,7 +11,7 @@ export function registerShortcut() {
     ...(shortcut.commandOrControl ? ['CommandOrControl'] : []),
     ...(shortcut.alt ? ['Alt'] : []),
     ...(shortcut.shift ? ['Shift'] : []),
-    ...(shortcut.key ? [shortcut.key] : [])
+    ...(shortcut.key ? [shortcut.key] : []),
   ];
 
   const accelerator = accelerators.join('+');
@@ -32,8 +32,8 @@ export function registerShortcut() {
         } else {
           console.log('[global-shortcut-helper] register failed.', 'No error.');
         }
-      } catch (e) {
-        console.log('[global-shortcut-helper] register failed.', e);
+      } catch (error) {
+        console.log('[global-shortcut-helper] register failed.', error);
       }
     }
   }

@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { getSettings } from '@/background/electron-store-helper';
+import { getSettings } from './background/electron-store-helper';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export function setOpenAtLogin() {
@@ -10,7 +10,7 @@ export function setOpenAtLogin() {
   const settings = getSettings();
 
   app.setLoginItemSettings({
-    openAtLogin: settings.startAtLogin
+    openAtLogin: settings.startAtLogin,
   });
 }
 

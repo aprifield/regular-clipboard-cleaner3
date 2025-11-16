@@ -8,11 +8,7 @@ export function loadDictionary(locale = 'en') {
     return;
   }
 
-  if (locale === 'ja') {
-    dictionary = ja;
-  } else {
-    dictionary = en;
-  }
+  dictionary = locale === 'ja' ? ja : en;
 }
 
 export function translate(key: string, ...params: string[]) {

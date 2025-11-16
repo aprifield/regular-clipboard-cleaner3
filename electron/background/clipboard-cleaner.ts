@@ -1,14 +1,14 @@
 import { clipboard, ipcMain } from 'electron';
+import rules from '../../src/util/rules';
 import {
   getHistoryItems,
   getSettings,
   setHistoryItems,
 } from './electron-store-helper';
-import rules from '../../src/util/rules';
 
 let timeoutId: NodeJS.Timeout;
 
-const startMonitoring = () => {
+function startMonitoring() {
   const historyItems = getHistoryItems();
   const settings = getSettings();
 
@@ -18,11 +18,11 @@ const startMonitoring = () => {
   const maxTextLength = rules.maxTextLength.value(settings.maxTextLength);
 
   const blockList = (settings.blockList || [])
-    .map((str) => str.replace(/[.*+?^=!:${}()|[\]/\\]/g, '\\$&'))
+    .map((str) => str.replace(/[.*+?^=!:${}()|[\]/\\]/g, String.raw`\$&`))
     .join('|');
   const blockListRegExp = blockList ? new RegExp(blockList, 'i') : undefined;
 
-  let clearedTime = new Date().getTime();
+  let clearedTime = Date.now();
   let notHistoryReadTime = 0;
   let notHistoryChangedTime = 0;
   let lastAvailableFormats = [] as string[];
@@ -30,7 +30,7 @@ const startMonitoring = () => {
   const clearClipboard = () => {
     console.log('[clipboard-cleaner] clear');
     clipboard.clear();
-    clearedTime = new Date().getTime();
+    clearedTime = Date.now();
   };
 
   if (maxHistoryCount < historyItems.length) {
@@ -40,7 +40,7 @@ const startMonitoring = () => {
   }
 
   return setInterval(() => {
-    const time = new Date().getTime();
+    const time = Date.now();
     const text = clipboard.readText();
     const currentAvailableFormats = clipboard.availableFormats();
 
@@ -52,23 +52,20 @@ const startMonitoring = () => {
     ) {
       notHistoryReadTime = time;
 
-      if (!currentAvailableFormats.length) {
+      if (currentAvailableFormats.length === 0) {
         const file =
           process.platform === 'darwin'
             ? clipboard.read('public.file-url')
             : clipboard.readBuffer('FileNameW');
-        if (file.length) {
+        if (file.length > 0) {
           currentAvailableFormats.push('clipboard-cleaner/file');
         }
       }
 
       if (
-        JSON.stringify(currentAvailableFormats) !==
+        JSON.stringify(currentAvailableFormats) ===
         JSON.stringify(lastAvailableFormats)
       ) {
-        notHistoryChangedTime = time;
-        lastAvailableFormats = currentAvailableFormats;
-      } else {
         const diff = time - Math.max(clearedTime, notHistoryChangedTime);
         console.log(
           '[clipboard-cleaner] not history diff',
@@ -78,6 +75,9 @@ const startMonitoring = () => {
         if (clearInterval * 1000 <= diff) {
           clearClipboard();
         }
+      } else {
+        notHistoryChangedTime = time;
+        lastAvailableFormats = currentAvailableFormats;
       }
 
       return;
@@ -107,14 +107,14 @@ const startMonitoring = () => {
       }
     }
   }, monitorInterval * 1000);
-};
+}
 
-export const restartMonitoring = () => {
+export function restartMonitoring() {
   clearInterval(timeoutId);
   timeoutId = startMonitoring();
-};
+}
 
-export const deleteHistory = (removedText: string) => {
+export function deleteHistory(removedText: string) {
   const clipboardText = clipboard.readText();
   if (clipboardText && clipboardText === removedText) {
     clipboard.clear();
@@ -128,14 +128,14 @@ export const deleteHistory = (removedText: string) => {
   setHistoryItems(historyItems);
 
   restartMonitoring();
-};
+}
 
-export const deleteAllHistory = () => {
+export function deleteAllHistory() {
   clipboard.clear();
 
   setHistoryItems([]);
 
   restartMonitoring();
-};
+}
 
 timeoutId = startMonitoring();

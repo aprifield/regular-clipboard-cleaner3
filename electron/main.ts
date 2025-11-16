@@ -1,20 +1,19 @@
+import type { Settings } from '@/types/settings';
 import path from 'node:path';
 // import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
-import { HistoryEvent } from '@/types/history-event';
-import { Settings } from '@/types/settings';
-import './background/clipboard-cleaner';
-import { sendToWebContents } from './background/main-helper';
+// import { HistoryEvent } from '@/types/history-event';
+// import './background/app-menu-helper'; // FIXME
+import { deleteAllHistory } from './background/clipboard-cleaner';
 import {
   getSettings,
   getWindowSettings,
   setSettings,
 } from './background/electron-store-helper';
+import { sendToWebContents } from './background/main-helper';
 import { iconPath } from './background/static-helper';
 import './background/app-tray-helper';
-// import './background/app-menu-helper'; // FIXME
-import { deleteAllHistory } from './background/clipboard-cleaner';
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -198,10 +197,8 @@ ipcMain
   //   })
   .on('web-settings-change', (event, { settings }: { settings: Settings }) => {
     console.log('settings', settings); // FIXME
-    if (historyWin) {
-      if (getSettings().showFrame !== settings.showFrame) {
-        historyWin.close();
-      }
+    if (historyWin && getSettings().showFrame !== settings.showFrame) {
+      historyWin.close();
     }
     setSettings(settings);
     // restartMonitoring(); // FIXME
