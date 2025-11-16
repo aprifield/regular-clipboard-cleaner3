@@ -78,7 +78,7 @@ onMounted(() => {
         :locale="locale"
         :platform="platform"
         :settings="settings"
-        @clipboard-settings-change="onClipboardSettingsChange"
+        @change:clipboard-settings="onClipboardSettingsChange"
       />
       <ClipboardHistory
         v-else

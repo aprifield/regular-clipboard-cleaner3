@@ -53,11 +53,11 @@ const currentHistoryItems = computed<TableHistoryItem[]>(() => {
     const wordRegExps = search.value
       .split(' ')
       .filter(Boolean)
-      .map(word => word.replace(/[.*+?^=!:${}()|[\]/\\]/g, String.raw`\$&`))
-      .map(word => new RegExp(word, 'i'));
+      .map((word) => word.replace(/[.*+?^=!:${}()|[\]/\\]/g, String.raw`\$&`))
+      .map((word) => new RegExp(word, 'i'));
     return wordRegExps.length > 0
-      ? tableHistoryItems.value.filter(item =>
-          wordRegExps.every(re => re.test(item.text))
+      ? tableHistoryItems.value.filter((item) =>
+          wordRegExps.every((re) => re.test(item.text))
         )
       : tableHistoryItems.value;
   } else {
@@ -86,7 +86,7 @@ function createHistoryEvent(): HistoryEvent {
         key: event.key,
         metaKey: event.metaKey,
         shiftKey: event.shiftKey,
-        events: keyboardEvents.value.map(e => ({
+        events: keyboardEvents.value.map((e) => ({
           altKey: e.altKey,
           code: e.code,
           ctrlKey: e.ctrlKey,
@@ -137,15 +137,15 @@ function emitCopyEvent(params: CopyEventParams) {
 }
 
 async function adjustScrollPositionAndFindTargetRow(targetIndex: number) {
-  const offset
-    = historyItemHeight.value * (maxVisibleItemCount.value + 1)
-      - historyContainerHeight.value;
+  const offset =
+    historyItemHeight.value * (maxVisibleItemCount.value + 1) -
+    historyContainerHeight.value;
 
   const visibleScrollRange = [
     targetIndex < maxVisibleItemCount.value
       ? 0
-      : (targetIndex - maxVisibleItemCount.value) * historyItemHeight.value
-        + offset,
+      : (targetIndex - maxVisibleItemCount.value) * historyItemHeight.value +
+        offset,
     targetIndex * historyItemHeight.value,
   ];
 
@@ -220,17 +220,17 @@ async function onWindowKeyDown(event: KeyboardEvent) {
     focusInTextField();
     selectedIndex.value = -1;
   } else if (
-    event.code === 'Home'
-    || event.code === 'End'
-    || event.code === 'PageUp'
-    || event.code === 'PageDown'
-    || event.code === 'ArrowUp'
-    || event.code === 'ArrowDown'
-    || event.code === 'Tab'
+    event.code === 'Home' ||
+    event.code === 'End' ||
+    event.code === 'PageUp' ||
+    event.code === 'PageDown' ||
+    event.code === 'ArrowUp' ||
+    event.code === 'ArrowDown' ||
+    event.code === 'Tab'
   ) {
     if (
-      (event.code === 'Home' || event.code === 'End')
-      && isTextFieldFocused.value
+      (event.code === 'Home' || event.code === 'End') &&
+      isTextFieldFocused.value
     ) {
       return;
     }
@@ -242,21 +242,21 @@ async function onWindowKeyDown(event: KeyboardEvent) {
 
     let targetSelectedIndex = -1;
     if (event.code === 'Home' || event.code === 'End') {
-      targetSelectedIndex
-        = event.code === 'Home' ? 0 : currentHistoryItems.value.length - 1;
+      targetSelectedIndex =
+        event.code === 'Home' ? 0 : currentHistoryItems.value.length - 1;
     } else if (event.code === 'PageUp' || event.code === 'PageDown') {
-      targetSelectedIndex
-        = (selectedIndex.value === -1 ? 0 : selectedIndex.value)
-          + (event.code === 'PageUp'
+      targetSelectedIndex =
+        (selectedIndex.value === -1 ? 0 : selectedIndex.value) +
+        (event.code === 'PageUp'
           ? -maxVisibleItemCount.value
           : maxVisibleItemCount.value);
       if (!currentHistoryItems.value[targetSelectedIndex]) {
-        targetSelectedIndex
-          = event.code === 'PageUp' ? 0 : currentHistoryItems.value.length - 1;
+        targetSelectedIndex =
+          event.code === 'PageUp' ? 0 : currentHistoryItems.value.length - 1;
       }
     } else {
-      targetSelectedIndex
-        = event.code === 'ArrowUp' || (event.code === 'Tab' && event.shiftKey)
+      targetSelectedIndex =
+        event.code === 'ArrowUp' || (event.code === 'Tab' && event.shiftKey)
           ? selectedIndex.value - 1
           : selectedIndex.value + 1;
       if (selectedIndex.value === -1 || targetSelectedIndex === -1) {
@@ -271,7 +271,7 @@ async function onWindowKeyDown(event: KeyboardEvent) {
       selectedIndex.value = targetSelectedRow ? targetSelectedIndex : -1;
     }
   } else {
-    if (!keyboardEvents.value.some(e => e.code == event.code)) {
+    if (!keyboardEvents.value.some((e) => e.code == event.code)) {
       keyboardEvents.value.push(event);
     }
   }
@@ -279,7 +279,7 @@ async function onWindowKeyDown(event: KeyboardEvent) {
 
 function onWindowKeyUp(event: KeyboardEvent) {
   keyboardEvents.value = keyboardEvents.value.filter(
-    e => e.code !== event.code
+    (e) => e.code !== event.code
   );
   if (keyboardEvents.value.length === 0 && copyEventParams.value) {
     emitCopyEvent(copyEventParams.value);
@@ -334,15 +334,14 @@ onUnmounted(() => {
 <template>
   <v-container class="clipboard-history pa-0" fluid>
     <v-card flat>
-      <v-card-title>
+      <v-card-title class="py-0">
         <v-text-field
           ref="textField"
-          append-icon="mdi-magnify"
-          dense
+          append-inner-icon="mdi-magnify"
           hide-details
           label="Search"
-          single-line
           :value="search"
+          variant="underlined"
           @blur="isTextFieldFocused = false"
           @focus="isTextFieldFocused = true"
           @input="onSearchInput"
@@ -444,8 +443,6 @@ onUnmounted(() => {
     }
     .history-action {
       display: none;
-      margin-top: 5px !important;
-      margin-bottom: 3px !important;
     }
     &:hover {
       .history-action {

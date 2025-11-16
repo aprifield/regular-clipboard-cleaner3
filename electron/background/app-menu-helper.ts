@@ -1,11 +1,5 @@
-import type {
-  MenuItemConstructorOptions } from 'electron';
-import {
-  app,
-  ipcMain,
-  Menu,
-  shell
-} from 'electron';
+import type { MenuItemConstructorOptions } from 'electron';
+import { app, ipcMain, Menu, shell } from 'electron';
 import { translate as __, loadDictionary } from '@/util/i18n';
 
 // https://www.electronjs.org/docs/api/menu

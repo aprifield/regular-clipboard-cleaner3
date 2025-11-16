@@ -12,7 +12,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'clipboard-settings-change', value: Settings): void; // FIXME rename
+  (e: 'change:clipboard-settings', value: Settings): void;
 }>();
 
 const __ = computed(() => {
@@ -27,19 +27,16 @@ const shortcut = computed(() => {
 const keys = computed(() => {
   const letters: string[] = [''];
   for (let i = 0; i < 26; i++) {
-    letters.push(String.fromCharCode(65 + i));
+    letters.push(String.fromCodePoint(65 + i));
   }
   return letters;
 });
 
 function onClipboardSettingsChange(setting: Settings) {
   console.log('emit-value', { ...props.settings, ...setting }); // FIXME
-  console.log(
-    'emit-value',
-    JSON.parse(JSON.stringify({ ...props.settings, ...setting })) // FIXME
-  );
   emit(
-    'clipboard-settings-change',
+    'change:clipboard-settings',
+    // eslint-disable-next-line unicorn/prefer-structured-clone
     JSON.parse(JSON.stringify({ ...props.settings, ...setting }))
   );
 }
@@ -55,7 +52,7 @@ function onClipboardSettingsChange(setting: Settings) {
               <v-switch
                 hide-details
                 :label="__('settings.startAtLogin')"
-                :model-value="settings.startAtLogin"
+                :model-value="props.settings.startAtLogin"
                 @update:model-value="
                   onClipboardSettingsChange({ startAtLogin: !!$event })
                 "
@@ -66,8 +63,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col>
               <v-switch
                 hide-details
-                :input-value="settings.maintained"
                 :label="__('settings.maintained')"
+                :model-value="props.settings.maintained"
                 @update:model-value="
                   onClipboardSettingsChange({ maintained: !!$event })
                 "
@@ -84,10 +81,13 @@ function onClipboardSettingsChange(setting: Settings) {
                 :label="__('settings.clearInterval')"
                 :max="rules.clearInterval.max"
                 :min="rules.clearInterval.min"
-                :model-value="rules.clearInterval.value(settings.clearInterval)"
+                :model-value="
+                  rules.clearInterval.value(props.settings.clearInterval)
+                "
                 :rules="[rules.clearInterval.rule]"
                 :suffix="__('settings.seconds')"
                 type="number"
+                variant="underlined"
                 @change="onClipboardSettingsChange({ clearInterval: +$event })"
               />
             </v-col>
@@ -98,11 +98,12 @@ function onClipboardSettingsChange(setting: Settings) {
                 :max="rules.monitorInterval.max"
                 :min="rules.monitorInterval.min"
                 :model-value="
-                  rules.monitorInterval.value(settings.monitorInterval)
+                  rules.monitorInterval.value(props.settings.monitorInterval)
                 "
                 :rules="[rules.monitorInterval.rule]"
                 :suffix="__('settings.seconds')"
                 type="number"
+                variant="underlined"
                 @change="
                   onClipboardSettingsChange({ monitorInterval: +$event })
                 "
@@ -117,10 +118,11 @@ function onClipboardSettingsChange(setting: Settings) {
                 :max="rules.maxHistoryCount.max"
                 :min="rules.maxHistoryCount.min"
                 :model-value="
-                  rules.maxHistoryCount.value(settings.maxHistoryCount)
+                  rules.maxHistoryCount.value(props.settings.maxHistoryCount)
                 "
                 :rules="[rules.maxHistoryCount.rule]"
                 type="number"
+                variant="underlined"
                 @change="
                   onClipboardSettingsChange({ maxHistoryCount: +$event })
                 "
@@ -132,9 +134,12 @@ function onClipboardSettingsChange(setting: Settings) {
                 :label="__('settings.maxTextLength')"
                 :max="rules.maxTextLength.max"
                 :min="rules.maxTextLength.min"
-                :model-value="rules.maxTextLength.value(settings.maxTextLength)"
+                :model-value="
+                  rules.maxTextLength.value(props.settings.maxTextLength)
+                "
                 :rules="[rules.maxTextLength.rule]"
                 type="number"
+                variant="underlined"
                 @change="onClipboardSettingsChange({ maxTextLength: +$event })"
               />
             </v-col>
@@ -149,8 +154,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col cols="12" sm="3">
               <v-checkbox
                 hide-details
-                :input-value="shortcut.commandOrControl"
                 label="Command Or Control"
+                :model-value="shortcut.commandOrControl"
                 @change="
                   onClipboardSettingsChange({
                     shortcut: { ...shortcut, commandOrControl: $event },
@@ -161,8 +166,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col cols="12" sm="3">
               <v-checkbox
                 hide-details
-                :input-value="shortcut.alt"
                 label="Alt"
+                :model-value="shortcut.alt"
                 @change="
                   onClipboardSettingsChange({
                     shortcut: { ...shortcut, alt: $event },
@@ -173,8 +178,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col cols="12" sm="3">
               <v-checkbox
                 hide-details
-                :input-value="shortcut.shift"
                 label="Shift"
+                :model-value="shortcut.shift"
                 @change="
                   onClipboardSettingsChange({
                     shortcut: { ...shortcut, shift: $event },
@@ -184,10 +189,10 @@ function onClipboardSettingsChange(setting: Settings) {
             </v-col>
             <v-col cols="12" sm="3">
               <v-select
-                dense
                 hide-details
                 :items="keys"
                 :value="shortcut.key"
+                variant="underlined"
                 @change="
                   onClipboardSettingsChange({
                     shortcut: { ...shortcut, key: $event },
@@ -210,9 +215,11 @@ function onClipboardSettingsChange(setting: Settings) {
                     <v-textarea
                       auto-grow
                       hide-details
-                      outlined
                       :placeholder="defaultPreprocessing"
-                      :value="settings.preprocessing || defaultPreprocessing"
+                      :value="
+                        props.settings.preprocessing || defaultPreprocessing
+                      "
+                      variant="outlined"
                       @change="
                         onClipboardSettingsChange({ preprocessing: $event })
                       "
@@ -226,8 +233,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col>
               <v-switch
                 hide-details
-                :input-value="settings.closeAfterCopy"
                 :label="__('settings.closeAfterCopy')"
+                :model-value="props.settings.closeAfterCopy"
                 @update:model-value="
                   onClipboardSettingsChange({ closeAfterCopy: !!$event })
                 "
@@ -239,8 +246,8 @@ function onClipboardSettingsChange(setting: Settings) {
               <v-switch
                 :disabled="platform === 'darwin'"
                 hide-details
-                :input-value="settings.pasteAfterCopy"
                 :label="__('settings.pasteAfterCopy')"
+                :model-value="props.settings.pasteAfterCopy"
                 @update:model-value="
                   onClipboardSettingsChange({ pasteAfterCopy: !!$event })
                 "
@@ -260,9 +267,10 @@ function onClipboardSettingsChange(setting: Settings) {
                 type="number"
                 :value="
                   rules.pasteAfterCopyTimeout.value(
-                    settings.pasteAfterCopyTimeout
+                    props.settings.pasteAfterCopyTimeout
                   )
                 "
+                variant="underlined"
                 @change="
                   onClipboardSettingsChange({ pasteAfterCopyTimeout: +$event })
                 "
@@ -274,7 +282,8 @@ function onClipboardSettingsChange(setting: Settings) {
               <v-text-field
                 hide-details
                 :label="__('settings.commandAfterCopy')"
-                :value="settings.commandAfterCopy"
+                :value="props.settings.commandAfterCopy"
+                variant="underlined"
                 @change="
                   onClipboardSettingsChange({ commandAfterCopy: $event })
                 "
@@ -291,9 +300,10 @@ function onClipboardSettingsChange(setting: Settings) {
                 type="number"
                 :value="
                   rules.commandAfterCopyTimeout.value(
-                    settings.commandAfterCopyTimeout
+                    props.settings.commandAfterCopyTimeout
                   )
                 "
+                variant="underlined"
                 @change="
                   onClipboardSettingsChange({
                     commandAfterCopyTimeout: +$event,
@@ -309,9 +319,11 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col>
               <v-switch
                 hide-details
-                :input-value="settings.showNearCursor"
                 :label="__('settings.showNearCursor')"
-                @change="onClipboardSettingsChange({ showNearCursor: $event })"
+                :model-value="props.settings.showNearCursor"
+                @update:model-value="
+                  onClipboardSettingsChange({ showNearCursor: !!$event })
+                "
               />
             </v-col>
           </v-row>
@@ -319,8 +331,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col>
               <v-switch
                 hide-details
-                :input-value="settings.showFrame"
                 :label="__('settings.showFrame')"
+                :model-value="props.settings.showFrame"
                 @update:model-value="
                   onClipboardSettingsChange({ showFrame: !!$event })
                 "
@@ -332,8 +344,8 @@ function onClipboardSettingsChange(setting: Settings) {
               <v-switch
                 v-if="platform === 'darwin'"
                 hide-details
-                :input-value="settings.showDockIcon"
                 :label="__('settings.showDockIcon')"
+                :model-value="props.settings.showDockIcon"
                 @update:model-value="
                   onClipboardSettingsChange({ showDockIcon: !!$event })
                 "
@@ -341,8 +353,8 @@ function onClipboardSettingsChange(setting: Settings) {
               <v-switch
                 v-else
                 hide-details
-                :input-value="settings.showTaskbarIcon"
                 :label="__('settings.showTaskbarIcon')"
+                :model-value="props.settings.showTaskbarIcon"
                 @update:model-value="
                   onClipboardSettingsChange({ showTaskbarIcon: !!$event })
                 "
@@ -353,8 +365,8 @@ function onClipboardSettingsChange(setting: Settings) {
             <v-col>
               <v-switch
                 hide-details
-                :input-value="settings.darkTheme"
                 :label="__('settings.darkTheme')"
+                :model-value="props.settings.darkTheme"
                 @update:model-value="
                   onClipboardSettingsChange({ darkTheme: !!$event })
                 "
@@ -375,10 +387,10 @@ function onClipboardSettingsChange(setting: Settings) {
                     <v-combobox
                       hide-details
                       label="Block list"
-                      :model-value="settings.blockList || []"
+                      :model-value="props.settings.blockList || []"
                       multiple
-                      outlined
                       placeholder="123456, password, qwerty"
+                      variant="outlined"
                       @update:model-value="
                         onClipboardSettingsChange({
                           blockList: $event,
@@ -394,9 +406,9 @@ function onClipboardSettingsChange(setting: Settings) {
                           variant="flat"
                           @click:close="
                             onClipboardSettingsChange({
-                              blockList: (settings.blockList || []).filter(
-                                (__, idx) => idx !== index
-                              ),
+                              blockList: (
+                                props.settings.blockList || []
+                              ).filter((__, idx) => idx !== index),
                             })
                           "
                         />

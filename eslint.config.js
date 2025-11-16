@@ -2,6 +2,7 @@ import vuetify from 'eslint-config-vuetify';
 
 export default vuetify({
   rules: {
+    '@stylistic/arrow-parens': ['error', 'always'],
     '@stylistic/comma-dangle': [
       'error',
       {
@@ -15,7 +16,7 @@ export default vuetify({
         multiline: { delimiter: 'semi', requireLast: true },
       },
     ],
-    'stylistic/operator-linebreak': [
+    '@stylistic/operator-linebreak': [
       'error',
       'after',
       {
