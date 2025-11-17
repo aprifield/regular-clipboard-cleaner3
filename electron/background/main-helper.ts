@@ -1,13 +1,24 @@
-// let historyWin: BrowserWindow | null;
-// let settingsWin: BrowserWindow | null;
-
 import type { BrowserWindow } from 'electron';
-import { nativeTheme } from 'electron';
+import type { ExecException } from 'node:child_process';
+import type {
+  HistoryEvent,
+  PreprocessingHistoryEvent,
+} from '@/types/history-event';
+import { exec, execFile } from 'node:child_process';
+import { clipboard, dialog, nativeTheme } from 'electron';
+import defaultPreprocessing from '@/util/preprocessing';
+import rules from '@/util/rules';
 import {
   getHistoryItems,
   getSettings,
   setSettings,
 } from './electron-store-helper';
+import { exePath } from './static-helper';
+
+interface ClipboardWindow {
+  historyWin: BrowserWindow | null;
+  settingsWin: BrowserWindow | null;
+}
 
 // // Scheme must be registered before the app is ready
 // protocol.registerSchemesAsPrivileged([
@@ -83,80 +94,31 @@ import {
 //   });
 // }
 
-// async function showOrCreateWindow(mode: 'history' | 'settings') {
-//   const win = mode === 'settings' ? settingsWin : historyWin;
-//   if (win) {
-//     const settings = getSettings();
-//     const windowSettings = getWindowSettings(mode);
-
-//     const bounds = {
-//       ...win.getBounds(),
-//       ...windowSettings,
-//     };
-
-//     if (mode === 'history' && settings.showNearCursor) {
-//       const point = screen.getCursorScreenPoint();
-//       bounds.x = point.x;
-//       bounds.y = point.y;
-//     }
-
-//     const display = screen.getDisplayNearestPoint(bounds);
-//     const displayLeft = display.workArea.x;
-//     const displayRight = display.workArea.x + display.workArea.width;
-//     const displayTop = display.workArea.y;
-//     const displayBottom = display.workArea.y + display.workArea.height;
-
-//     if (displayRight < bounds.x + bounds.width) {
-//       bounds.x -= bounds.x + bounds.width - displayRight;
-//     }
-//     if (bounds.x < displayLeft) {
-//       bounds.x = displayLeft;
-//     }
-//     if (displayBottom < bounds.y + bounds.height) {
-//       bounds.y -= bounds.y + bounds.height - displayBottom;
-//     }
-//     if (bounds.y < displayTop) {
-//       bounds.y = displayTop;
-//     }
-
-//     win.setOpacity(0);
-//     win.show(); // When minimized, show must be run before setBounds
-//     const setBounds: 'setBounds' | 'setContentBounds' =
-//       mode === 'history' && settings.showNearCursor
-//         ? 'setContentBounds'
-//         : 'setBounds';
-//     win[setBounds](bounds);
-//     win[setBounds](bounds); // When using multiple displays, a single position adjustment will not display the correct position
-//     setTimeout(() => {
-//       win.setOpacity(1);
-//     });
-//   } else {
-//     createWindow(mode);
-//   }
-// }
-
-// async function hideWindow(mode: 'history' | 'settings') {
-//   const win = mode === 'settings' ? settingsWin : historyWin;
-//   if (win) {
-//     if (process.platform === 'darwin') {
-//       const settings = getSettings();
-//       if (settings.showDockIcon) {
-//         // Don't use setOpacity on mac because the minimized image is not displayed.
-//         win.minimize();
-//       } else {
-//         // Don't use hide on windows because the paste target will not be active.
-//         // The paste doesn't work on mac, so no problem.
-//         win.hide();
-//       }
-//     } else {
-//       win.setOpacity(0); // Disable minimization animation
-//       win.minimize();
-//       setTimeout(() => {
-//         win.setOpacity(1);
-//       });
-//     }
-//   }
-// }
+export async function hideWindow(
+  { historyWin, settingsWin }: ClipboardWindow,
+  mode: 'history' | 'settings'
+) {
+  const win = mode === 'settings' ? settingsWin : historyWin;
+  if (win) {
+    if (process.platform === 'darwin') {
+      const settings = getSettings();
+      if (settings.showDockIcon) {
+        // Don't use setOpacity on mac because the minimized image is not displayed.
+        win.minimize();
+      } else {
+        // Don't use hide on windows because the paste target will not be active.
+        // The paste doesn't work on mac, so no problem.
+        win.hide();
+      }
+    } else {
+      win.setOpacity(0); // Disable minimization animation
+      win.minimize();
+      setTimeout(() => {
+        win.setOpacity(1);
+      });
+    }
+  }
+}
 
 // // Quit when all windows are closed.
 // app.on('window-all-closed', () => {
@@ -202,10 +164,10 @@ import {
 //   }
 // }
 
-export function sendToWebContents(
-  historyWin: BrowserWindow | null,
-  settingsWin: BrowserWindow | null
-) {
+export function sendToWebContents({
+  historyWin,
+  settingsWin,
+}: ClipboardWindow) {
   const historyItems = getHistoryItems();
   const settings = getSettings();
   if (settings.darkTheme === undefined) {
@@ -222,48 +184,56 @@ export function sendToWebContents(
   }
 }
 
-// const copyTextAndPostProcess = (text: string, historyEvent: HistoryEvent) => {
-//   const settings = getSettings();
-//   const preprocessing = settings.preprocessing
-//     ? settings.preprocessing
-//     : defaultPreprocessing;
+export function copyTextAndPostProcess(
+  { historyWin, settingsWin }: ClipboardWindow,
+  text: string,
+  historyEvent: HistoryEvent
+) {
+  const settings = getSettings();
+  const preprocessing = settings.preprocessing || defaultPreprocessing;
 
-//   let isPastePrevent = false;
-//   (historyEvent as PreprocessingHistoryEvent).preventPaste = () => {
-//     isPastePrevent = true;
-//   };
-//   try {
-//     text = eval(`(${preprocessing})(text, historyEvent)`);
-//   } catch (e) {
-//     text = e + '';
-//   }
+  let isPastePrevent = false;
+  (historyEvent as PreprocessingHistoryEvent).preventPaste = () => {
+    isPastePrevent = true;
+  };
+  try {
+    text = eval(`(${preprocessing})(text, historyEvent)`);
+  } catch (error) {
+    text = error + '';
+  }
 
-//   clipboard.writeText(text);
+  clipboard.writeText(text);
 
-//   if (settings.closeAfterCopy) {
-//     if (historyWin) {
-//       hideWindow('history');
-//     }
-//   }
+  if (settings.closeAfterCopy && historyWin) {
+    hideWindow({ historyWin, settingsWin }, 'history');
+  }
 
-//   if (!isPastePrevent) {
-//     if (settings.pasteAfterCopy) {
-//       setTimeout(() => {
-//         robot.keyTap('v', 'control');
-//       }, rules.pasteAfterCopyTimeout.value(settings.pasteAfterCopyTimeout));
-//     }
-//     if (settings.commandAfterCopy) {
-//       setTimeout(() => {
-//         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-//         exec(settings.commandAfterCopy!, (error: ExecException | null) => {
-//           if (error) {
-//             dialog.showErrorBox(
-//               'Command Error',
-//               `The command [${settings.commandAfterCopy}] failed.`
-//             );
-//           }
-//         });
-//       }, rules.commandAfterCopyTimeout.value(settings.commandAfterCopyTimeout));
-//     }
-//   }
-// };
+  if (!isPastePrevent) {
+    if (settings.pasteAfterCopy) {
+      setTimeout(() => {
+        const path = exePath();
+        console.log('path', path);
+        execFile(path, ['^v'], (error, stdout, stderr) => {
+          if (error) {
+            console.error('error:', error); // FIXME
+            return;
+          }
+          console.log('stdout:', stdout); // FIXME
+          console.log('stderr:', stderr); // FIXME
+        });
+      }, rules.pasteAfterCopyTimeout.value(settings.pasteAfterCopyTimeout));
+    }
+    if (settings.commandAfterCopy) {
+      setTimeout(() => {
+        exec(settings.commandAfterCopy!, (error: ExecException | null) => {
+          if (error) {
+            dialog.showErrorBox(
+              'Command Error',
+              `The command [${settings.commandAfterCopy}] failed.`
+            );
+          }
+        });
+      }, rules.commandAfterCopyTimeout.value(settings.commandAfterCopyTimeout));
+    }
+  }
+}

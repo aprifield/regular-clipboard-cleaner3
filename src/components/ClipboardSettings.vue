@@ -156,9 +156,9 @@ function onClipboardSettingsChange(setting: Settings) {
                 hide-details
                 label="Command Or Control"
                 :model-value="shortcut.commandOrControl"
-                @change="
+                @update:model-value="
                   onClipboardSettingsChange({
-                    shortcut: { ...shortcut, commandOrControl: $event },
+                    shortcut: { ...shortcut, commandOrControl: !!$event },
                   })
                 "
               />
@@ -168,9 +168,9 @@ function onClipboardSettingsChange(setting: Settings) {
                 hide-details
                 label="Alt"
                 :model-value="shortcut.alt"
-                @change="
+                @update:model-value="
                   onClipboardSettingsChange({
-                    shortcut: { ...shortcut, alt: $event },
+                    shortcut: { ...shortcut, alt: !!$event },
                   })
                 "
               />
@@ -180,9 +180,9 @@ function onClipboardSettingsChange(setting: Settings) {
                 hide-details
                 label="Shift"
                 :model-value="shortcut.shift"
-                @change="
+                @update:model-value="
                   onClipboardSettingsChange({
-                    shortcut: { ...shortcut, shift: $event },
+                    shortcut: { ...shortcut, shift: !!$event },
                   })
                 "
               />
@@ -191,9 +191,9 @@ function onClipboardSettingsChange(setting: Settings) {
               <v-select
                 hide-details
                 :items="keys"
-                :value="shortcut.key"
+                :model-value="shortcut.key"
                 variant="underlined"
-                @change="
+                @update:model-value="
                   onClipboardSettingsChange({
                     shortcut: { ...shortcut, key: $event },
                   })

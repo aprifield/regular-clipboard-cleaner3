@@ -8,6 +8,7 @@ export default vuetify({
       {
         arrays: 'always-multiline',
         objects: 'always-multiline',
+        imports: 'always-multiline',
       },
     ],
     '@stylistic/member-delimiter-style': [
@@ -21,8 +22,8 @@ export default vuetify({
       'after',
       {
         overrides: {
-          '?': 'after',
-          ':': 'after',
+          '?': 'before',
+          ':': 'before',
         },
       },
     ],

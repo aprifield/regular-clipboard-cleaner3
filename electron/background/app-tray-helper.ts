@@ -23,7 +23,7 @@ app.whenReady().then(() => {
     },
     {
       label: __('tray.exit'),
-      click: () => ipcMain.emit('app-tray-exit-click'),
+      click: () => ipcMain.emit('native:click:tray-exit'),
     },
   ]);
 

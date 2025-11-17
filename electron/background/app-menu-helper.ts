@@ -20,7 +20,7 @@ app.whenReady().then(() => {
               {
                 label: __('menu.settings'),
                 click: () => {
-                  ipcMain.emit('app-menu-settings-click');
+                  ipcMain.emit('native:click:menu-settings');
                 },
               },
               { type: 'separator' },
@@ -43,7 +43,7 @@ app.whenReady().then(() => {
         : [
             {
               label: __('menu.settings'),
-              click: () => ipcMain.emit('app-menu-settings-click'),
+              click: () => ipcMain.emit('native:click:menu-settings'),
             },
             { type: 'separator' },
             { role: 'quit', label: __('menu.quit') },
@@ -55,7 +55,7 @@ app.whenReady().then(() => {
       submenu: [
         {
           label: __('menu.deleteAllHistory'),
-          click: () => ipcMain.emit('app-menu-delete-all-history-click'),
+          click: () => ipcMain.emit('native:click:menu-delete-all-history'),
         },
       ],
     },

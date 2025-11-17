@@ -1,5 +1,5 @@
 import { app, globalShortcut, ipcMain } from 'electron';
-import { getSettings } from '@/background/electron-store-helper';
+import { getSettings } from './electron-store-helper';
 
 let oldAccelerator = '';
 
@@ -25,7 +25,7 @@ export function registerShortcut() {
     if (accelerator && shortcut.key) {
       try {
         const result = globalShortcut.register(accelerator, () => {
-          ipcMain.emit('global-shortcut-focus');
+          ipcMain.emit('native:keydown:global-shortcut');
         });
         if (result) {
           oldAccelerator = accelerator;

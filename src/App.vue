@@ -14,20 +14,26 @@ const platform = ref('win32');
 const historyItems = ref<HistoryItem[]>([]);
 const settings = ref<Settings>({});
 
-function onClipboardListItemClick(text: string, event: HistoryEvent) {
-  window.ipcBridge.send('web-list-item-click', text, event);
+function onClipboardListItemClick(value: {
+  text: string;
+  historyEvent: HistoryEvent;
+}) {
+  window.ipcBridge.send('web:click:list-item', value);
 }
 
 function onClipboardDeleteClick(text: string) {
-  window.ipcBridge.send('web-delete-click', text);
+  window.ipcBridge.send('web:click:delete', { text });
 }
 
-function onClipboardEnterKeyDown(text: string, event: HistoryEvent) {
-  window.ipcBridge.send('web-enter-keydown', text, event);
+function onClipboardEnterKeyDown(value: {
+  text: string;
+  historyEvent: HistoryEvent;
+}) {
+  window.ipcBridge.send('web:keydown:enter', value);
 }
 
 function onClipboardEscapeKeyDown() {
-  window.ipcBridge.send('web-escape-keydown');
+  window.ipcBridge.send('web:keydown:escape');
 }
 
 function onClipboardSettingsChange(settings: Settings) {
@@ -35,7 +41,7 @@ function onClipboardSettingsChange(settings: Settings) {
 }
 
 onMounted(() => {
-  window.ipcBridge.send('web-app-mounted', {
+  window.ipcBridge.send('web:mounted', {
     mode: mode.value,
   });
 });
@@ -46,7 +52,7 @@ onMounted(() => {
   locale.value = searchParams.get('locale') || 'en';
   platform.value = searchParams.get('platform') || 'win32';
 
-  window.ipcBridge.send('web-app-created');
+  window.ipcBridge.send('web:created');
   window.ipcBridge.on('init-history', (event, args) => {
     historyItems.value = args;
   });

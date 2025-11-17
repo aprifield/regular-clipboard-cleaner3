@@ -1,18 +1,29 @@
+import type { HistoryEvent } from '@/types/history-event';
 import type { Settings } from '@/types/settings';
 import path from 'node:path';
 // import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
-// import { HistoryEvent } from '@/types/history-event';
-// import './background/app-menu-helper'; // FIXME
-import { deleteAllHistory } from './background/clipboard-cleaner';
+import { showDockIcon, switchDockIcon } from './background/app-dock-helper';
+import {
+  deleteAllHistory,
+  deleteHistory,
+  restartMonitoring,
+} from './background/clipboard-cleaner';
 import {
   getSettings,
   getWindowSettings,
   setSettings,
+  setWindowSettings,
 } from './background/electron-store-helper';
-import { sendToWebContents } from './background/main-helper';
+import { registerShortcut } from './background/global-shortcut-helper';
+import {
+  copyTextAndPostProcess,
+  hideWindow,
+  sendToWebContents,
+} from './background/main-helper';
 import { iconPath } from './background/static-helper';
+import './background/app-menu-helper';
 import './background/app-tray-helper';
 
 // const require = createRequire(import.meta.url)
@@ -44,27 +55,29 @@ console.log('gotTheLock', gotTheLock);
 let historyWin: BrowserWindow | null;
 let settingsWin: BrowserWindow | null = null;
 
+function win() {
+  return { historyWin, settingsWin };
+}
+
 function createWindow(mode: 'history' | 'settings') {
+  const settings = getSettings();
+
   const win = new BrowserWindow({
     icon: iconPath(),
+    frame: mode === 'settings' || settings.showFrame,
+    maximizable: false,
+    show: false,
+    skipTaskbar: mode === 'history' && !settings.showTaskbarIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   });
   if (mode === 'settings') {
     settingsWin = win;
-    // showDockIcon(); // FIXME
+    showDockIcon();
   } else {
     historyWin = win;
   }
-
-  // Test active push message to Renderer-process.
-  win.webContents.on('did-finish-load', () => {
-    historyWin?.webContents.send(
-      'main-process-message', // FIXME
-      new Date().toLocaleString()
-    );
-  });
 
   const params = [
     `mode=${mode}`,
@@ -79,13 +92,13 @@ function createWindow(mode: 'history' | 'settings') {
   }
 
   const _setWindowSettings = () => {
-    // setWindowSettings(mode, win.getBounds()); // FIXME
+    setWindowSettings(mode, win.getBounds());
   };
 
   win.on('closed', () => {
     if (mode === 'settings') {
       settingsWin = null;
-      // switchDockIcon(); // FIXME
+      switchDockIcon();
     } else {
       historyWin = null;
     }
@@ -105,20 +118,24 @@ async function showOrCreateWindow(mode: 'history' | 'settings') {
   if (win) {
     const settings = getSettings();
     const windowSettings = getWindowSettings(mode);
+
     const bounds = {
       ...win.getBounds(),
       ...windowSettings,
     };
+
     if (mode === 'history' && settings.showNearCursor) {
       const point = screen.getCursorScreenPoint();
       bounds.x = point.x;
       bounds.y = point.y;
     }
+
     const display = screen.getDisplayNearestPoint(bounds);
     const displayLeft = display.workArea.x;
     const displayRight = display.workArea.x + display.workArea.width;
     const displayTop = display.workArea.y;
     const displayBottom = display.workArea.y + display.workArea.height;
+
     if (displayRight < bounds.x + bounds.width) {
       bounds.x -= bounds.x + bounds.width - displayRight;
     }
@@ -131,6 +148,7 @@ async function showOrCreateWindow(mode: 'history' | 'settings') {
     if (bounds.y < displayTop) {
       bounds.y = displayTop;
     }
+
     win.setOpacity(0);
     win.show(); // When minimized, show must be run before setBounds
     const setBounds: 'setBounds' | 'setContentBounds' =
@@ -165,56 +183,57 @@ app.on('activate', () => {
 });
 
 ipcMain
-  .on('web-app-created', () => {
-    sendToWebContents(historyWin, settingsWin);
+  .on('web:created', () => {
+    sendToWebContents(win());
+  })
+  .on('web:mounted', (event, { mode }: { mode: 'history' | 'settings' }) => {
+    showOrCreateWindow(mode);
   })
   .on(
-    'web-app-mounted',
-    (_event, { mode }: { mode: 'history' | 'settings' }) => {
-      showOrCreateWindow(mode);
+    'web:click:list-item',
+    (
+      event,
+      { text, historyEvent }: { text: string; historyEvent: HistoryEvent }
+    ) => {
+      copyTextAndPostProcess(win(), text, historyEvent);
     }
   )
-  //   .on(
-  //     'web-list-item-click',
-  //     (event, [text, historyEvent]: [string, HistoryEvent]) => {
-  //       // copyTextAndPostProcess(text, historyEvent);
-  //     }
-  //   )
-  //   .on(
-  //     'web-enter-keydown',
-  //     (event, [text, historyEvent]: [string, HistoryEvent]) => {
-  //       // copyTextAndPostProcess(text, historyEvent);
-  //     }
-  //   )
-  //   .on('web-escape-keydown', () => {
-  //     if (historyWin) {
-  //       // hideWindow('history');
-  //     }
-  //   })
-  //   .on('web-delete-click', (event, [text]: [string]) => {
-  //     // deleteHistory(text);
-  //     // sendToWebContents(historyWin, settingsWin);
-  //   })
+  .on(
+    'web:keydown:enter',
+    (
+      event,
+      { text, historyEvent }: { text: string; historyEvent: HistoryEvent }
+    ) => {
+      copyTextAndPostProcess(win(), text, historyEvent);
+    }
+  )
+  .on('web:keydown:escape', () => {
+    if (historyWin) {
+      hideWindow(win(), 'history');
+    }
+  })
+  .on('web:click:delete', (event, { text }: { text: string }) => {
+    deleteHistory(text);
+    sendToWebContents(win());
+  })
   .on('web-settings-change', (event, { settings }: { settings: Settings }) => {
-    console.log('settings', settings); // FIXME
     if (historyWin && getSettings().showFrame !== settings.showFrame) {
       historyWin.close();
     }
     setSettings(settings);
-    // restartMonitoring(); // FIXME
-    // registerShortcut();
-    // setOpenAtLogin();
+    restartMonitoring();
+    registerShortcut();
+    // setOpenAtLogin(); // FIXME
     // switchTaskbarIcon(historyWin);
-    sendToWebContents(historyWin, settingsWin);
+    sendToWebContents(win());
   })
-  // .on('app-menu-settings-click', () => {
-  //   console.log('xxxxxxxxxxxxxxxxxxxx');
-  //   showOrCreateWindow('settings');
-  // })
-  //   .on('app-menu-delete-all-history-click', () => {
-  //     // deleteAllHistory();
-  //     // sendToWebContents(historyWin, settingsWin);
-  //   })
+  .on('native:click:menu-settings', () => {
+    showOrCreateWindow('settings');
+  })
+  .on('native:click:menu-delete-all-history', () => {
+    deleteAllHistory();
+    sendToWebContents(win());
+  })
   .on('app-tray-history-click', () => {
     showOrCreateWindow('history');
   })
@@ -223,16 +242,16 @@ ipcMain
   })
   .on('app-tray-delete-all-history-click', () => {
     deleteAllHistory();
-    sendToWebContents(historyWin, settingsWin);
+    sendToWebContents(win());
   })
-  .on('app-tray-exit-click', () => {
+  .on('native:click:tray-exit', () => {
     app.quit();
   })
-  //   .on('global-shortcut-focus', () => {
-  //     //showOrCreateWindow('history');
-  //   })
+  .on('native:keydown:global-shortcut', () => {
+    showOrCreateWindow('history');
+  })
   .on('clipboard-history-change', () => {
-    sendToWebContents(historyWin, settingsWin);
+    sendToWebContents(win());
   });
 
 app.whenReady().then(() => showOrCreateWindow('history'));

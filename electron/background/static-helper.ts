@@ -6,3 +6,7 @@ export function iconPath() {
     process.platform === 'win32' ? 'icon.ico' : 'icon-16x16.png'
   );
 }
+
+export function exePath() {
+  return path.join(process.env.VITE_PUBLIC, 'DotNetKeySender.exe');
+}

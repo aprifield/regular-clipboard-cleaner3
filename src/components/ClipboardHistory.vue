@@ -11,7 +11,7 @@ interface TableHistoryItem extends HistoryItem {
 }
 
 interface CopyEventParams {
-  eventName: string;
+  eventName: 'clipboard-list-item-click' | 'clipboard-enter-keydown';
   text: string;
   historyEvent: HistoryEvent;
 }
@@ -22,6 +22,15 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  (
+    e: 'clipboard-list-item-click',
+    value: { text: string; historyEvent: HistoryEvent }
+  ): void; // FIXME rename
+  (
+    // eslint-disable-next-line @typescript-eslint/unified-signatures
+    e: 'clipboard-enter-keydown',
+    value: { text: string; historyEvent: HistoryEvent }
+  ): void; // FIXME rename
   (e: 'clipboard-escape-keydown'): void; // FIXME rename
   (e: 'clipboard-delete-click', value: string): void; // FIXME rename
 }>();
@@ -126,7 +135,18 @@ function tryEmitCopyEvent(params: CopyEventParams) {
 }
 
 function emitCopyEvent(params: CopyEventParams) {
-  console.log('CopyEventParams', params);
+  if (params.eventName === 'clipboard-list-item-click') {
+    emit('clipboard-list-item-click', {
+      text: params.text,
+      historyEvent: params.historyEvent,
+    });
+  }
+  if (params.eventName === 'clipboard-enter-keydown') {
+    emit('clipboard-enter-keydown', {
+      text: params.text,
+      historyEvent: params.historyEvent,
+    });
+  }
   // FIXME impl
   // this.$emit(
   //   params.eventName,
@@ -338,8 +358,9 @@ onUnmounted(() => {
         <v-text-field
           ref="textField"
           append-inner-icon="mdi-magnify"
+          density="comfortable"
           hide-details
-          label="Search"
+          placeholder="Search"
           :value="search"
           variant="underlined"
           @blur="isTextFieldFocused = false"

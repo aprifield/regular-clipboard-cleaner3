@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { getSettings } from '@/background/electron-store-helper';
+import { getSettings } from './electron-store-helper';
 
 export function showDockIcon() {
   if (process.platform !== 'darwin') {
