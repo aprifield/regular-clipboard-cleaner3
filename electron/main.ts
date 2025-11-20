@@ -196,7 +196,9 @@ ipcMain
       event,
       { text, historyEvent }: { text: string; historyEvent: HistoryEvent }
     ) => {
-      copyTextAndPostProcess(win(), text, historyEvent);
+      copyTextAndPostProcess(win(), text, historyEvent, () => {
+        hideWindow(historyWin);
+      });
     }
   )
   .on(
@@ -205,13 +207,13 @@ ipcMain
       event,
       { text, historyEvent }: { text: string; historyEvent: HistoryEvent }
     ) => {
-      copyTextAndPostProcess(win(), text, historyEvent);
+      copyTextAndPostProcess(win(), text, historyEvent, () => {
+        hideWindow(historyWin);
+      });
     }
   )
   .on('web:keydown:escape', () => {
-    if (historyWin) {
-      hideWindow(win(), 'history');
-    }
+    hideWindow(historyWin);
   })
   .on('web:click:delete', (event, { text }: { text: string }) => {
     deleteHistory(text);

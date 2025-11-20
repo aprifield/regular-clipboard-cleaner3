@@ -2,6 +2,7 @@ import path from 'node:path';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// FIXME remove this file
 export function iconPath() {
   return path.join(
     process.env.VITE_PUBLIC,
