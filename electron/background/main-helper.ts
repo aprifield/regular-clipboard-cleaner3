@@ -1,5 +1,4 @@
 import type { BrowserWindow } from 'electron';
-import type { ExecException } from 'node:child_process';
 import type {
   HistoryEvent,
   PreprocessingHistoryEvent,
@@ -175,12 +174,12 @@ export function sendToWebContents({
     setSettings(settings);
   }
   if (historyWin) {
-    historyWin.webContents.send('init-history', historyItems);
-    historyWin.webContents.send('init-settings', settings);
+    historyWin.webContents.send('native:init:history', historyItems);
+    historyWin.webContents.send('native:init:settings', settings);
   }
   if (settingsWin) {
-    settingsWin.webContents.send('init-history', historyItems);
-    settingsWin.webContents.send('init-settings', settings);
+    settingsWin.webContents.send('native:init:history', historyItems);
+    settingsWin.webContents.send('native:init:settings', settings);
   }
 }
 
@@ -225,7 +224,7 @@ export function copyTextAndPostProcess(
     }
     if (settings.commandAfterCopy) {
       setTimeout(() => {
-        exec(settings.commandAfterCopy!, (error: ExecException | null) => {
+        exec(settings.commandAfterCopy!, (error) => {
           if (error) {
             dialog.showErrorBox(
               'Command Error',

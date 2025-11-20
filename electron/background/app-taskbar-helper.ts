@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron';
-import { getSettings } from './background/electron-store-helper';
+import { getSettings } from './electron-store-helper';
 
 export function switchTaskbarIcon(win: BrowserWindow | null) {
   if (process.platform === 'darwin') {

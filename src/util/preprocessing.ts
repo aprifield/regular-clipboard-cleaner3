@@ -5,6 +5,7 @@ import type { PreprocessingHistoryEvent } from '@/types/history-event';
 /* eslint-disable antfu/top-level-function */
 /* eslint-disable unicorn/no-nested-ternary */
 /* eslint-disable unicorn/no-array-callback-reference */
+// @ts-ignore
 const dummy = (text: string, event: PreprocessingHistoryEvent) => {
   const addPrefix = (prefix: string | number) => {
     const map = (str: string, index: number, lines: string[]) =>

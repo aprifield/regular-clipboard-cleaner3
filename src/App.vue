@@ -37,7 +37,7 @@ function onClipboardEscapeKeyDown() {
 }
 
 function onClipboardSettingsChange(settings: Settings) {
-  window.ipcBridge.send('web-settings-change', { settings });
+  window.ipcBridge.send('web:change:settings', { settings });
 }
 
 onMounted(() => {
@@ -53,10 +53,10 @@ onMounted(() => {
   platform.value = searchParams.get('platform') || 'win32';
 
   window.ipcBridge.send('web:created');
-  window.ipcBridge.on('init-history', (event, args) => {
+  window.ipcBridge.on('native:init:history', (event, args) => {
     historyItems.value = args;
   });
-  window.ipcBridge.on('init-settings', (event, args) => {
+  window.ipcBridge.on('native:init:settings', (event, args) => {
     settings.value = args;
     theme.change(settings.value.darkTheme ? 'dark' : 'light');
     const html = document.querySelector('html') as HTMLHtmlElement;
@@ -90,10 +90,10 @@ onMounted(() => {
         v-else
         :history-items="historyItems"
         :settings="settings"
+        @click:clipboard-list-item="onClipboardListItemClick"
         @clipboard-delete-click="onClipboardDeleteClick"
-        @clipboard-enter-keydown="onClipboardEnterKeyDown"
         @clipboard-escape-keydown="onClipboardEscapeKeyDown"
-        @clipboard-list-item-click="onClipboardListItemClick"
+        @keydown:clipboard-enter="onClipboardEnterKeyDown"
       />
     </v-main>
   </v-app>

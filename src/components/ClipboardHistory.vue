@@ -11,7 +11,7 @@ interface TableHistoryItem extends HistoryItem {
 }
 
 interface CopyEventParams {
-  eventName: 'clipboard-list-item-click' | 'clipboard-enter-keydown';
+  eventName: 'click:clipboard-list-item' | 'keydown:clipboard-enter';
   text: string;
   historyEvent: HistoryEvent;
 }
@@ -23,14 +23,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (
-    e: 'clipboard-list-item-click',
+    e: 'click:clipboard-list-item' | 'keydown:clipboard-enter',
     value: { text: string; historyEvent: HistoryEvent }
-  ): void; // FIXME rename
-  (
-    // eslint-disable-next-line @typescript-eslint/unified-signatures
-    e: 'clipboard-enter-keydown',
-    value: { text: string; historyEvent: HistoryEvent }
-  ): void; // FIXME rename
+  ): void;
   (e: 'clipboard-escape-keydown'): void; // FIXME rename
   (e: 'clipboard-delete-click', value: string): void; // FIXME rename
 }>();
@@ -135,24 +130,10 @@ function tryEmitCopyEvent(params: CopyEventParams) {
 }
 
 function emitCopyEvent(params: CopyEventParams) {
-  if (params.eventName === 'clipboard-list-item-click') {
-    emit('clipboard-list-item-click', {
-      text: params.text,
-      historyEvent: params.historyEvent,
-    });
-  }
-  if (params.eventName === 'clipboard-enter-keydown') {
-    emit('clipboard-enter-keydown', {
-      text: params.text,
-      historyEvent: params.historyEvent,
-    });
-  }
-  // FIXME impl
-  // this.$emit(
-  //   params.eventName,
-  //   params.text,
-  //   params.historyEvent
-  // );
+  emit(params.eventName, {
+    text: params.text,
+    historyEvent: params.historyEvent,
+  });
   initStatus();
 }
 
@@ -206,7 +187,7 @@ function onSearchInput(str: string) {
 
 function onListItemClick(text: string) {
   tryEmitCopyEvent({
-    eventName: 'clipboard-list-item-click',
+    eventName: 'click:clipboard-list-item',
     text,
     historyEvent: createHistoryEvent(),
   });
@@ -230,7 +211,7 @@ async function onWindowKeyDown(event: KeyboardEvent) {
     event.preventDefault();
     if (currentHistoryItems.value[selectedIndex.value]) {
       tryEmitCopyEvent({
-        eventName: 'clipboard-enter-keydown',
+        eventName: 'keydown:clipboard-enter',
         text: currentHistoryItems.value[selectedIndex.value].text,
         historyEvent: createHistoryEvent(),
       });
@@ -445,11 +426,12 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .clipboard-history {
   .v-card-title {
+    // FIXME do not use card
     padding-top: 8px;
     padding-bottom: 8px;
   }
   .v-card-text {
-    height: calc(100vh - 46px);
+    height: calc(100vh - 46px); // FIXE calc 46px
   }
   .v-list-item {
     min-height: 32px;

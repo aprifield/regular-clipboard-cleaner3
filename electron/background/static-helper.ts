@@ -1,5 +1,7 @@
 import path from 'node:path';
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 export function iconPath() {
   return path.join(
     process.env.VITE_PUBLIC,
@@ -8,5 +10,7 @@ export function iconPath() {
 }
 
 export function exePath() {
-  return path.join(process.env.VITE_PUBLIC, 'DotNetKeySender.exe');
+  return isDevelopment
+    ? path.join(process.env.APP_ROOT, 'resources', 'bin', 'DotNetKeySender.exe')
+    : path.join(process.resourcesPath, 'bin', 'DotNetKeySender.exe');
 }

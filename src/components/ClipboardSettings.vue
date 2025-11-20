@@ -33,7 +33,6 @@ const keys = computed(() => {
 });
 
 function onClipboardSettingsChange(setting: Settings) {
-  console.log('emit-value', { ...props.settings, ...setting }); // FIXME
   emit(
     'change:clipboard-settings',
     // eslint-disable-next-line unicorn/prefer-structured-clone
@@ -49,6 +48,7 @@ function onClipboardSettingsChange(setting: Settings) {
         <v-container>
           <v-row>
             <v-col>
+              <!-- v-checkbox -->
               <v-switch
                 hide-details
                 :label="__('settings.startAtLogin')"

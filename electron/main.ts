@@ -1,10 +1,11 @@
 import type { HistoryEvent } from '@/types/history-event';
 import type { Settings } from '@/types/settings';
 import path from 'node:path';
-// import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import { showDockIcon, switchDockIcon } from './background/app-dock-helper';
+import { setOpenAtLogin } from './background/app-login-helper';
+import { switchTaskbarIcon } from './background/app-taskbar-helper';
 import {
   deleteAllHistory,
   deleteHistory,
@@ -26,21 +27,19 @@ import { iconPath } from './background/static-helper';
 import './background/app-menu-helper';
 import './background/app-tray-helper';
 
-// const require = createRequire(import.meta.url)
+const gotTheLock = app.requestSingleInstanceLock();
+if (gotTheLock) {
+  app.on('second-instance', () => {
+    showOrCreateWindow('history');
+  });
+} else {
+  app.quit();
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// The built directory structure
-//
-// ├─┬─┬ dist
-// │ │ └── index.html
-// │ │
-// │ ├─┬ dist-electron
-// │ │ ├── main.js
-// │ │ └── preload.mjs
-// │
 process.env.APP_ROOT = path.join(__dirname, '..');
 
-// 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron');
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
@@ -48,9 +47,6 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, 'public')
   : RENDERER_DIST;
-
-const gotTheLock = app.requestSingleInstanceLock();
-console.log('gotTheLock', gotTheLock);
 
 let historyWin: BrowserWindow | null;
 let settingsWin: BrowserWindow | null = null;
@@ -69,7 +65,10 @@ function createWindow(mode: 'history' | 'settings') {
     show: false,
     skipTaskbar: mode === 'history' && !settings.showTaskbarIcon,
     webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
       preload: path.join(__dirname, 'preload.mjs'),
+      spellcheck: false,
     },
   });
   if (mode === 'settings') {
@@ -79,16 +78,18 @@ function createWindow(mode: 'history' | 'settings') {
     historyWin = win;
   }
 
-  const params = [
-    `mode=${mode}`,
-    `locale=${app.getLocale()}`,
-    `platform=${process.platform}`,
-  ].join('&');
+  const query = {
+    mode,
+    locale: app.getLocale(),
+    platform: process.platform,
+  };
   if (VITE_DEV_SERVER_URL) {
+    const params = new URLSearchParams(query).toString();
     win.loadURL(`${VITE_DEV_SERVER_URL}?${params}`);
   } else {
-    // win.loadFile('dist/index.html')
-    win.loadFile(path.join(RENDERER_DIST, `index.html?${params}`));
+    win.loadFile(path.join(RENDERER_DIST, 'index.html'), {
+      query,
+    });
   }
 
   const _setWindowSettings = () => {
@@ -216,15 +217,15 @@ ipcMain
     deleteHistory(text);
     sendToWebContents(win());
   })
-  .on('web-settings-change', (event, { settings }: { settings: Settings }) => {
+  .on('web:change:settings', (event, { settings }: { settings: Settings }) => {
     if (historyWin && getSettings().showFrame !== settings.showFrame) {
       historyWin.close();
     }
     setSettings(settings);
     restartMonitoring();
     registerShortcut();
-    // setOpenAtLogin(); // FIXME
-    // switchTaskbarIcon(historyWin);
+    setOpenAtLogin();
+    switchTaskbarIcon(historyWin);
     sendToWebContents(win());
   })
   .on('native:click:menu-settings', () => {
