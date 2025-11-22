@@ -118,27 +118,34 @@ html {
       width: 12px;
       height: 10px;
     }
+
     ::-webkit-scrollbar-track {
       background: rgb(30, 30, 30);
     }
+
     ::-webkit-scrollbar-thumb {
       background: rgb(66, 66, 66);
     }
+
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(79, 79, 79);
     }
   }
+
   &--light {
     ::-webkit-scrollbar {
       width: 12px;
       height: 10px;
     }
+
     ::-webkit-scrollbar-track {
       background: rgb(241, 241, 241);
     }
+
     ::-webkit-scrollbar-thumb {
       background: rgb(192, 192, 192);
     }
+
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(168, 168, 168);
     }

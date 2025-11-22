@@ -1,5 +1,5 @@
 import { clipboard, ipcMain } from 'electron';
-import rules from '../../src/util/rules';
+import rules from '@/util/rules';
 import {
   getHistoryItems,
   getSettings,

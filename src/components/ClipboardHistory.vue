@@ -35,10 +35,13 @@ const isTextFieldFocused = ref(false);
 const selectedIndex = ref(-1);
 const searchTimeoutId = ref(-1);
 const findTargetTimeoutId = ref(-1);
+const textContainerHeight = ref(40);
 const historyItemHeight = ref(32);
 const historyContainerHeight = ref(300);
 const keyboardEvents = ref<KeyboardEvent[]>([]);
 const copyEventParams = ref<CopyEventParams>();
+const textContainer = ref<HTMLDivElement | null>(null);
+const historyContainer = ref<HTMLDivElement | null>(null);
 const textField = ref<{ $el: HTMLDivElement } | null>(null);
 const historyList = ref<{ $el: HTMLDivElement } | null>(null);
 
@@ -111,13 +114,13 @@ function createHistoryEvent(): HistoryEvent {
 }
 function focusInTextField() {
   if (!isTextFieldFocused.value) {
-    (textField.value!.$el.querySelector('input') as HTMLInputElement).focus();
+    textField.value?.$el.querySelector<HTMLInputElement>('input')?.focus();
   }
 }
 
 function focusOutTextField() {
   if (isTextFieldFocused.value) {
-    (textField.value!.$el.querySelector('input') as HTMLInputElement).blur();
+    textField.value?.$el.querySelector<HTMLInputElement>('input')?.blur();
   }
 }
 
@@ -288,10 +291,12 @@ function onWindowKeyUp(event: KeyboardEvent) {
 }
 
 function onWindowResize() {
-  const historyContainer = historyList.value!.$el.closest('.v-card-text');
-  historyContainerHeight.value = historyContainer
-    ? historyContainer.clientHeight
-    : 300;
+  if (textContainer.value) {
+    textContainerHeight.value = textContainer.value.clientHeight;
+  }
+  if (historyContainer.value) {
+    historyContainerHeight.value = historyContainer.value.clientHeight;
+  }
 }
 
 function onWindowBlur() {
@@ -333,128 +338,122 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-container class="clipboard-history pa-0" fluid>
-    <v-card flat>
-      <v-card-title class="py-0">
-        <v-text-field
-          ref="textField"
-          append-inner-icon="mdi-magnify"
-          density="comfortable"
-          hide-details
-          placeholder="Search"
-          :value="search"
-          variant="underlined"
-          @blur="isTextFieldFocused = false"
-          @focus="isTextFieldFocused = true"
-          @input="onSearchInput"
-        />
-      </v-card-title>
-      <v-card-text class="pa-0">
-        <v-virtual-scroll
-          ref="historyList"
-          bench="1"
-          :height="historyContainerHeight"
-          :item-height="historyItemHeight"
-          :items="currentHistoryItems"
-        >
-          <template #default="{ item, index }">
-            <!--
+  <v-sheet class="clipboard-history">
+    <div class="px-2">
+      <v-text-field
+        ref="textField"
+        density="comfortable"
+        hide-details
+        :model-value="search"
+        placeholder="Search"
+        variant="underlined"
+        @blur="isTextFieldFocused = false"
+        @focus="isTextFieldFocused = true"
+        @update:model-value="onSearchInput"
+      >
+        <template #append-inner>
+          <v-icon size="20">mdi-magnify</v-icon>
+        </template>
+      </v-text-field>
+    </div>
+    <div
+      ref="historyContainer"
+      class="history-container"
+      :style="{ '--text-container-height': `${textContainerHeight}px` }"
+    >
+      <v-virtual-scroll
+        ref="historyList"
+        bench="1"
+        :height="historyContainerHeight"
+        :item-height="historyItemHeight"
+        :items="currentHistoryItems"
+      >
+        <template #default="{ item, index }">
+          <!--
               Don't use mouseenter or mouseover.
               Scrolling with the arrow keys returns the focus to the line where the cursor was placed.
               The same problem occurs when closing the screen by clicking on a line.
             -->
-            <v-list-item
-              :id="`clipboard-row-${index}`"
-              :key="`list-item-${index}`"
-              class="v-list-item--link primary--text"
-              :class="{ 'v-list-item--active': index === selectedIndex }"
-              dense
-              @click="onListItemClick(item.text)"
-            >
-              <template #prepend>
-                <div class="history-row" @mousemove="selectedIndex = index">
-                  <span
-                    class="text-right secondary--text"
-                    :style="{ 'min-width': '16px' }"
-                  >
-                    {{ item.row }}
-                  </span>
-                </div>
-              </template>
-              <v-list-item-title
-                class="history-text"
+          <v-list-item
+            :id="`clipboard-row-${index}`"
+            :key="`list-item-${index}`"
+            class="v-list-item--link primary--text"
+            :class="{ 'v-list-item--active': index === selectedIndex }"
+            density="compact"
+            @click="onListItemClick(item.text)"
+          >
+            <template #prepend>
+              <div class="history-no" @mousemove="selectedIndex = index">
+                {{ item.row }}
+              </div>
+            </template>
+            <v-list-item-title @mousemove="selectedIndex = index">
+              <ClipboardHistoryText
+                :history-event="tooltipHistoryEvent"
+                :settings="settings"
+                :text="item.text"
+                :time="item.time"
+                :tooltip="index === selectedIndex"
+                :tooltip-line-count="Math.floor((maxVisibleItemCount * 2) / 3)"
+              />
+            </v-list-item-title>
+            <template #append>
+              <div
+                class="history-action"
+                title="Delete"
                 @mousemove="selectedIndex = index"
               >
-                <ClipboardHistoryText
-                  :history-event="tooltipHistoryEvent"
-                  :settings="settings"
-                  :text="item.text"
-                  :time="item.time"
-                  :tooltip="index === selectedIndex"
-                  :tooltip-line-count="
-                    Math.floor((maxVisibleItemCount * 2) / 3)
-                  "
+                <v-btn
+                  density="compact"
+                  icon="mdi-trash-can-outline"
+                  size="x-small"
+                  variant="plain"
+                  @click.stop="onDeleteClick(item.text)"
+                  @mousedown.stop
                 />
-              </v-list-item-title>
-              <template #append>
-                <div
-                  class="history-action"
-                  title="Delete"
-                  @mousemove="selectedIndex = index"
-                >
-                  <v-btn
-                    icon="mdi-trash-can-outline"
-                    size="x-small"
-                    variant="plain"
-                    @click.stop="onDeleteClick(item.text)"
-                    @mousedown.stop
-                  />
-                </div>
-              </template>
-            </v-list-item>
-            <v-divider
-              v-if="index !== currentHistoryItems.length - 1"
-              :key="`divider-${index}`"
-            />
-          </template>
-        </v-virtual-scroll>
-      </v-card-text>
-    </v-card>
-  </v-container>
+              </div>
+            </template>
+          </v-list-item>
+          <v-divider
+            v-if="index !== currentHistoryItems.length - 1"
+            :key="`divider-${index}`"
+          />
+        </template>
+      </v-virtual-scroll>
+    </div>
+  </v-sheet>
 </template>
 
 <style scoped lang="scss">
 .clipboard-history {
-  .v-card-title {
-    // FIXME do not use card
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
-  .v-card-text {
-    height: calc(100vh - 46px); // FIXE calc 46px
-  }
-  .v-list-item {
-    min-height: 32px;
-    .history-text {
-      padding-top: 4px;
-      padding-bottom: 4px;
-    }
-    .history-row {
-      margin-top: 5px !important;
-      margin-bottom: 3px !important;
-      margin-right: 8px !important;
-    }
-    .history-action {
-      display: none;
-    }
-    &:hover {
+  .history-container {
+    height: calc(100vh - var(--text-container-height));
+
+    .v-list-item {
+      min-height: 32px;
+
+      .history-no {
+        text-align: right;
+        margin-right: 8px;
+        min-width: 16px;
+        font-size: 12px;
+        opacity: 0.6;
+      }
+
       .history-action {
-        display: inline-flex;
+        display: none;
+      }
+
+      &:hover {
+        .history-action {
+          display: inline-flex;
+        }
       }
     }
-  }
-  .scroll-behavior-smooth {
-    scroll-behavior: smooth;
+
+    .scroll-behavior-smooth {
+      scroll-behavior: smooth;
+    }
   }
 }
 </style>

@@ -11,6 +11,7 @@ import {
   deleteHistory,
   restartMonitoring,
 } from './background/clipboard-cleaner';
+import { copyTextAndPostProcess } from './background/clipboard-helper';
 import {
   getSettings,
   getWindowSettings,
@@ -18,11 +19,7 @@ import {
   setWindowSettings,
 } from './background/electron-store-helper';
 import { registerShortcut } from './background/global-shortcut-helper';
-import {
-  copyTextAndPostProcess,
-  hideWindow,
-  sendToWebContents,
-} from './background/main-helper';
+import { hideWindow, sendToWebContents } from './background/main-helper';
 import { iconPath } from './background/static-helper';
 import './background/app-menu-helper';
 import './background/app-tray-helper';
@@ -164,6 +161,7 @@ async function showOrCreateWindow(mode: 'history' | 'settings') {
   } else {
     createWindow(mode);
   }
+  win?.webContents.openDevTools(); // FIXME
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -196,7 +194,7 @@ ipcMain
       event,
       { text, historyEvent }: { text: string; historyEvent: HistoryEvent }
     ) => {
-      copyTextAndPostProcess(win(), text, historyEvent, () => {
+      copyTextAndPostProcess(text, historyEvent, () => {
         hideWindow(historyWin);
       });
     }
@@ -207,7 +205,7 @@ ipcMain
       event,
       { text, historyEvent }: { text: string; historyEvent: HistoryEvent }
     ) => {
-      copyTextAndPostProcess(win(), text, historyEvent, () => {
+      copyTextAndPostProcess(text, historyEvent, () => {
         hideWindow(historyWin);
       });
     }
