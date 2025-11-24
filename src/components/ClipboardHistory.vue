@@ -338,7 +338,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-sheet class="clipboard-history">
+  <v-sheet>
     <div class="px-2">
       <v-text-field
         ref="textField"
@@ -425,35 +425,33 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-.clipboard-history {
-  .history-container {
-    height: calc(100vh - var(--text-container-height));
+.history-container {
+  height: calc(100vh - var(--text-container-height));
 
-    .v-list-item {
-      min-height: 32px;
+  .v-list-item {
+    min-height: 32px;
 
-      .history-no {
-        text-align: right;
-        margin-right: 8px;
-        min-width: 16px;
-        font-size: 12px;
-        opacity: 0.6;
-      }
+    .history-no {
+      text-align: right;
+      margin-right: 8px;
+      min-width: 16px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
 
+    .history-action {
+      display: none;
+    }
+
+    &:hover {
       .history-action {
-        display: none;
-      }
-
-      &:hover {
-        .history-action {
-          display: inline-flex;
-        }
+        display: inline-flex;
       }
     }
+  }
 
-    .scroll-behavior-smooth {
-      scroll-behavior: smooth;
-    }
+  .scroll-behavior-smooth {
+    scroll-behavior: smooth;
   }
 }
 </style>

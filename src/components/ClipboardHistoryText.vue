@@ -60,7 +60,7 @@ watch(
     transition="fade-transition"
   >
     <template #activator="{ props: activatorProps }">
-      <span v-bind="activatorProps">{{ props.text }}</span>
+      <span v-bind="activatorProps" class="history-text">{{ props.text }}</span>
     </template>
     <div class="tooltip-content">
       <div class="tooltip-caption">
@@ -100,37 +100,47 @@ watch(
 </template>
 
 <style scoped lang="scss">
+.history-text {
+  font-size: 12px;
+}
+
 .tooltip-content {
   max-width: calc(100vw - 24px);
   min-width: calc(100vw - 24px);
   max-height: calc(50vh);
   overflow: hidden;
-}
-.tooltip-caption {
-  font-size: 12px;
-}
-.tooltip-text {
-  font-family: Consolas, 'Courier New', 'Roboto', sans-serif;
-  font-size: 12px;
-  .tooltip-line {
-    line-height: 18px;
-    overflow-wrap: break-word;
+
+  .tooltip-caption {
+    font-size: 12px;
   }
-  .tooltip-white-space {
-    opacity: 0.4;
-    white-space: pre;
-  }
-  .tooltip-icon-return {
-    color: #fff;
-    font-size: 10px;
-    margin-top: -1px;
-    margin-left: 1px;
-    opacity: 0.8;
-  }
-  .tooltip-icon-dots {
-    color: #fff;
-    font-size: 14px;
-    opacity: 0.8;
+
+  .tooltip-text {
+    font-family: Consolas, 'Courier New', 'Roboto', sans-serif;
+    font-size: 12px;
+
+    .tooltip-line {
+      line-height: 18px;
+      overflow-wrap: break-word;
+    }
+
+    .tooltip-white-space {
+      white-space: pre;
+      opacity: 0.4;
+    }
+
+    .tooltip-icon-return {
+      font-size: 10px;
+      margin-top: -1px;
+      margin-left: 1px;
+      color: rgb(var(--v-theme-on-surface-variant));
+      opacity: 0.8;
+    }
+
+    .tooltip-icon-dots {
+      font-size: 12px;
+      color: rgb(var(--v-theme-on-surface-variant));
+      opacity: 0.8;
+    }
   }
 }
 </style>

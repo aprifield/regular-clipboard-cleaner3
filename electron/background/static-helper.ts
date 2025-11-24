@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 // FIXME remove this file
 export function iconPath() {

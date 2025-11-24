@@ -34,6 +34,7 @@ export default vuetify({
         named: 'never',
       },
     ],
+    'unicorn/prefer-structured-clone': 'off',
     'vue/script-indent': 'off',
   },
 });

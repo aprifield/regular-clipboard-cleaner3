@@ -14,11 +14,15 @@ const platform = ref('win32');
 const historyItems = ref<HistoryItem[]>([]);
 const settings = ref<Settings>({});
 
+function cloneDeep(obj: any) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function onClipboardListItemClick(value: {
   text: string;
   historyEvent: HistoryEvent;
 }) {
-  window.ipcBridge.send('web:click:list-item', value);
+  window.ipcBridge.send('web:click:list-item', cloneDeep(value));
 }
 
 function onClipboardDeleteClick(text: string) {
@@ -29,7 +33,7 @@ function onClipboardEnterKeyDown(value: {
   text: string;
   historyEvent: HistoryEvent;
 }) {
-  window.ipcBridge.send('web:keydown:enter', value);
+  window.ipcBridge.send('web:keydown:enter', cloneDeep(value));
 }
 
 function onClipboardEscapeKeyDown() {
@@ -37,7 +41,7 @@ function onClipboardEscapeKeyDown() {
 }
 
 function onClipboardSettingsChange(settings: Settings) {
-  window.ipcBridge.send('web:change:settings', { settings });
+  window.ipcBridge.send('web:change:settings', cloneDeep({ settings }));
 }
 
 onMounted(() => {

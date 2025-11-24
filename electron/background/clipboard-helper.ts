@@ -39,10 +39,9 @@ export function copyTextAndPostProcess(
         const path = exePath();
         execFile(path, ['^v'], (error) => {
           if (error) {
-            // FIXME output message in dialog
             dialog.showErrorBox(
               'Paste Error',
-              `The command [${error.cmd}] failed.` // FIXME do test
+              `The command [${error.cmd}] failed.`
             );
           }
         });
@@ -52,7 +51,6 @@ export function copyTextAndPostProcess(
       setTimeout(() => {
         exec(settings.commandAfterCopy!, (error) => {
           if (error) {
-            // FIXME output message in dialog
             dialog.showErrorBox(
               'Command Error',
               `The command [${settings.commandAfterCopy}] failed.`

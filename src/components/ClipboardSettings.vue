@@ -33,11 +33,7 @@ const keys = computed(() => {
 });
 
 function onClipboardSettingsChange(setting: Settings) {
-  emit(
-    'change:clipboard-settings',
-    // eslint-disable-next-line unicorn/prefer-structured-clone
-    JSON.parse(JSON.stringify({ ...props.settings, ...setting }))
-  );
+  emit('change:clipboard-settings', { ...props.settings, ...setting });
 }
 </script>
 
