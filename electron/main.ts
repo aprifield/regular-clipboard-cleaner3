@@ -2,7 +2,7 @@ import type { HistoryEvent } from '@/types/history-event';
 import type { Settings } from '@/types/settings';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme, screen } from 'electron';
 import { showDockIcon, switchDockIcon } from './background/app-dock-helper';
 import { setOpenAtLogin } from './background/app-login-helper';
 import { switchTaskbarIcon } from './background/app-taskbar-helper';
@@ -13,14 +13,13 @@ import {
 } from './background/clipboard-cleaner';
 import { copyTextAndPostProcess } from './background/clipboard-helper';
 import {
+  getHistoryItems,
   getSettings,
   getWindowSettings,
   setSettings,
   setWindowSettings,
 } from './background/electron-store-helper';
 import { registerShortcut } from './background/global-shortcut-helper';
-import { hideWindow, sendToWebContents } from './background/main-helper';
-import { iconPath } from './background/static-helper';
 import './background/app-menu-helper';
 import './background/app-tray-helper';
 
@@ -46,17 +45,16 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   : RENDERER_DIST;
 
 let historyWin: BrowserWindow | null;
-let settingsWin: BrowserWindow | null = null;
-
-function win() {
-  return { historyWin, settingsWin };
-}
+let settingsWin: BrowserWindow | null;
 
 function createWindow(mode: 'history' | 'settings') {
   const settings = getSettings();
 
   const win = new BrowserWindow({
-    icon: iconPath(),
+    icon: path.join(
+      process.env.VITE_PUBLIC,
+      process.platform === 'win32' ? 'icon.ico' : 'icon-16x16.png'
+    ),
     frame: mode === 'settings' || settings.showFrame,
     maximizable: false,
     show: false,
@@ -161,7 +159,48 @@ async function showOrCreateWindow(mode: 'history' | 'settings') {
   } else {
     createWindow(mode);
   }
-  win?.webContents.openDevTools(); // FIXME
+}
+
+async function hideWindow(win: BrowserWindow | null) {
+  if (!win) {
+    return;
+  }
+
+  if (process.platform === 'darwin') {
+    const settings = getSettings();
+    if (settings.showDockIcon) {
+      // Don't use setOpacity on mac because the minimized image is not displayed.
+      win.minimize();
+    } else {
+      // Don't use hide on windows because the paste target will not be active.
+      // The paste doesn't work on mac, so no problem.
+      win.hide();
+    }
+  } else {
+    win.setOpacity(0); // Disable minimization animation
+    win.minimize();
+    setTimeout(() => {
+      win.setOpacity(1);
+    });
+  }
+}
+
+function sendToWebContents() {
+  const historyItems = getHistoryItems();
+  const settings = getSettings();
+  if (settings.darkTheme === undefined) {
+    settings.darkTheme = nativeTheme.shouldUseDarkColors;
+    setSettings(settings);
+  }
+
+  const _sendToWebContents = (win: BrowserWindow | null) => {
+    if (win) {
+      win.webContents.send('native:init:history', historyItems);
+      win.webContents.send('native:init:settings', settings);
+    }
+  };
+  _sendToWebContents(historyWin);
+  _sendToWebContents(settingsWin);
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -183,7 +222,7 @@ app.on('activate', () => {
 
 ipcMain
   .on('web:created', () => {
-    sendToWebContents(win());
+    sendToWebContents();
   })
   .on('web:mounted', (event, { mode }: { mode: 'history' | 'settings' }) => {
     showOrCreateWindow(mode);
@@ -215,7 +254,7 @@ ipcMain
   })
   .on('web:click:delete', (event, { text }: { text: string }) => {
     deleteHistory(text);
-    sendToWebContents(win());
+    sendToWebContents();
   })
   .on('web:change:settings', (event, { settings }: { settings: Settings }) => {
     if (historyWin && getSettings().showFrame !== settings.showFrame) {
@@ -226,14 +265,14 @@ ipcMain
     registerShortcut();
     setOpenAtLogin();
     switchTaskbarIcon(historyWin);
-    sendToWebContents(win());
+    sendToWebContents();
   })
   .on('native:click:menu-settings', () => {
     showOrCreateWindow('settings');
   })
   .on('native:click:menu-delete-all-history', () => {
     deleteAllHistory();
-    sendToWebContents(win());
+    sendToWebContents();
   })
   .on('app-tray-history-click', () => {
     showOrCreateWindow('history');
@@ -243,7 +282,7 @@ ipcMain
   })
   .on('app-tray-delete-all-history-click', () => {
     deleteAllHistory();
-    sendToWebContents(win());
+    sendToWebContents();
   })
   .on('native:click:tray-exit', () => {
     app.quit();
@@ -252,7 +291,7 @@ ipcMain
     showOrCreateWindow('history');
   })
   .on('clipboard-history-change', () => {
-    sendToWebContents(win());
+    sendToWebContents();
   });
 
 app.whenReady().then(() => showOrCreateWindow('history'));

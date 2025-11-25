@@ -26,8 +26,8 @@ const emit = defineEmits<{
     e: 'click:clipboard-list-item' | 'keydown:clipboard-enter',
     value: { text: string; historyEvent: HistoryEvent }
   ): void;
-  (e: 'clipboard-escape-keydown'): void; // FIXME rename
-  (e: 'clipboard-delete-click', value: string): void; // FIXME rename
+  (e: 'click:clipboard-delete', value: string): void;
+  (e: 'keydown:clipboard-escape'): void;
 }>();
 
 const search = ref('');
@@ -197,7 +197,7 @@ function onListItemClick(text: string) {
 }
 
 function onDeleteClick(text: string) {
-  emit('clipboard-delete-click', text);
+  emit('click:clipboard-delete', text);
   selectedIndex.value = -1;
 }
 
@@ -208,7 +208,7 @@ async function onWindowKeyDown(event: KeyboardEvent) {
 
   if (event.code === 'Escape') {
     event.preventDefault();
-    emit('clipboard-escape-keydown');
+    emit('keydown:clipboard-escape');
     initStatus();
   } else if (event.code === 'Enter') {
     event.preventDefault();

@@ -3,11 +3,13 @@ import type {
   PreprocessingHistoryEvent,
 } from '@/types/history-event';
 import { exec, execFile } from 'node:child_process';
+import path from 'node:path';
 import { clipboard, dialog } from 'electron';
 import defaultPreprocessing from '@/util/preprocessing';
 import rules from '@/util/rules';
 import { getSettings } from './electron-store-helper';
-import { exePath } from './static-helper';
+
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export function copyTextAndPostProcess(
   text: string,
@@ -36,8 +38,15 @@ export function copyTextAndPostProcess(
   if (!isPastePrevent) {
     if (settings.pasteAfterCopy) {
       setTimeout(() => {
-        const path = exePath();
-        execFile(path, ['^v'], (error) => {
+        const keySenderFilePath = isDevelopment
+          ? path.join(
+              process.env.APP_ROOT,
+              'resources',
+              'bin',
+              'DotNetKeySender.exe'
+            )
+          : path.join(process.resourcesPath, 'bin', 'DotNetKeySender.exe');
+        execFile(keySenderFilePath, ['^v'], (error) => {
           if (error) {
             dialog.showErrorBox(
               'Paste Error',

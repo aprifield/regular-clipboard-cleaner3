@@ -1,6 +1,6 @@
+import path from 'node:path';
 import { app, ipcMain, Menu, Tray } from 'electron';
 import { translate as __, loadDictionary } from '@/util/i18n';
-import { iconPath } from './static-helper';
 
 // https://www.electronjs.org/docs/faq#my-apps-tray-disappeared-after-a-few-minutes
 let tray: Tray | null = null;
@@ -27,7 +27,12 @@ app.whenReady().then(() => {
     },
   ]);
 
-  tray = new Tray(iconPath());
+  tray = new Tray(
+    path.join(
+      process.env.VITE_PUBLIC,
+      process.platform === 'win32' ? 'icon.ico' : 'icon-16x16.png'
+    )
+  );
   tray.setContextMenu(contextMenu);
   tray.setToolTip(app.getName());
   tray.on('click', () => {

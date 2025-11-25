@@ -94,10 +94,10 @@ onMounted(() => {
         v-else
         :history-items="historyItems"
         :settings="settings"
+        @click:clipboard-delete="onClipboardDeleteClick"
         @click:clipboard-list-item="onClipboardListItemClick"
-        @clipboard-delete-click="onClipboardDeleteClick"
-        @clipboard-escape-keydown="onClipboardEscapeKeyDown"
         @keydown:clipboard-enter="onClipboardEnterKeyDown"
+        @keydown:clipboard-escape="onClipboardEscapeKeyDown"
       />
     </v-main>
   </v-app>
