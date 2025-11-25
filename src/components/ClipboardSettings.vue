@@ -40,7 +40,7 @@ function onClipboardSettingsChange(setting: Settings) {
 <template>
   <v-container>
     <v-sheet rounded>
-      <v-container>
+      <div class="pa-4">
         <v-row>
           <v-col>
             <v-checkbox
@@ -67,9 +67,9 @@ function onClipboardSettingsChange(setting: Settings) {
             />
           </v-col>
         </v-row>
-      </v-container>
+      </div>
       <v-divider class="my-2" />
-      <v-container>
+      <div class="pa-4">
         <v-row>
           <v-col cols="12" sm="6">
             <v-text-field
@@ -140,9 +140,9 @@ function onClipboardSettingsChange(setting: Settings) {
             />
           </v-col>
         </v-row>
-      </v-container>
+      </div>
       <v-divider class="my-2" />
-      <v-container>
+      <div class="pa-4">
         <v-row>
           <v-col>{{ __('settings.shortcutComment') }}</v-col>
         </v-row>
@@ -201,9 +201,9 @@ function onClipboardSettingsChange(setting: Settings) {
             />
           </v-col>
         </v-row>
-      </v-container>
+      </div>
       <v-divider class="my-2" />
-      <v-container>
+      <div class="pa-4">
         <v-row>
           <v-col>
             <v-expansion-panels flat>
@@ -318,9 +318,9 @@ function onClipboardSettingsChange(setting: Settings) {
             />
           </v-col>
         </v-row>
-      </v-container>
+      </div>
       <v-divider class="my-2" />
-      <v-container>
+      <div class="pa-4">
         <v-row>
           <v-col>
             <v-checkbox
@@ -384,9 +384,9 @@ function onClipboardSettingsChange(setting: Settings) {
             />
           </v-col>
         </v-row>
-      </v-container>
+      </div>
       <v-divider class="my-2" />
-      <v-container>
+      <div class="pa-4">
         <v-row>
           <v-col>
             <v-expansion-panels flat>
@@ -431,7 +431,7 @@ function onClipboardSettingsChange(setting: Settings) {
             </v-expansion-panels>
           </v-col>
         </v-row>
-      </v-container>
+      </div>
     </v-sheet>
   </v-container>
 </template>

@@ -363,7 +363,6 @@ onUnmounted(() => {
     >
       <v-virtual-scroll
         ref="historyList"
-        bench="1"
         :height="historyContainerHeight"
         :item-height="historyItemHeight"
         :items="currentHistoryItems"
@@ -434,7 +433,7 @@ onUnmounted(() => {
     .history-no {
       text-align: right;
       margin-right: 8px;
-      min-width: 16px;
+      min-width: 22px;
       font-size: 12px;
       opacity: 0.6;
     }
