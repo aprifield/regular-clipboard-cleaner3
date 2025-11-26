@@ -369,14 +369,13 @@ onUnmounted(() => {
       >
         <template #default="{ item, index }">
           <!--
-              Don't use mouseenter or mouseover.
-              Scrolling with the arrow keys returns the focus to the line where the cursor was placed.
-              The same problem occurs when closing the screen by clicking on a line.
-            -->
+            Don't use mouseenter or mouseover.
+            Scrolling with the arrow keys returns the focus to the line where the cursor was placed.
+            The same problem occurs when closing the screen by clicking on a line.
+          -->
           <v-list-item
             :id="`clipboard-row-${index}`"
             :key="`list-item-${index}`"
-            class="v-list-item--link primary--text"
             :class="{ 'v-list-item--active': index === selectedIndex }"
             density="compact"
             @click="onListItemClick(item.text)"
@@ -447,6 +446,11 @@ onUnmounted(() => {
         display: inline-flex;
       }
     }
+  }
+
+  .v-divider {
+    position: absolute;
+    width: 100%;
   }
 
   .scroll-behavior-smooth {
