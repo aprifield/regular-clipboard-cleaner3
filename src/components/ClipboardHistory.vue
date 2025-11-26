@@ -321,7 +321,6 @@ watch(selectedIndex, () => {
 });
 
 onMounted(() => {
-  console.log('historyList', historyList.value);
   window.addEventListener('keydown', onWindowKeyDown);
   window.addEventListener('keyup', onWindowKeyUp);
   window.addEventListener('resize', onWindowResize);
