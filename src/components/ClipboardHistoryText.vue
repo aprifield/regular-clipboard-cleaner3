@@ -53,10 +53,11 @@ watch(
 </script>
 
 <template>
+  <!-- To improve performance in v-virtual-scroll, delay tooltip element creation until actually displayed. -->
   <v-tooltip
+    v-if="props.tooltip"
     location="bottom"
     :model-value="isTooltipVisible"
-    open-delay="300"
     transition="fade-transition"
   >
     <template #activator="{ props: activatorProps }">
@@ -97,6 +98,7 @@ watch(
       </div>
     </div>
   </v-tooltip>
+  <span v-else class="history-text">{{ props.text }}</span>
 </template>
 
 <style scoped lang="scss">

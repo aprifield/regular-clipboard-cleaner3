@@ -85,7 +85,9 @@ function onClipboardSettingsChange(setting: Settings) {
               :suffix="__('settings.seconds')"
               type="number"
               variant="outlined"
-              @change="onClipboardSettingsChange({ clearInterval: +$event })"
+              @update:model-value="
+                onClipboardSettingsChange({ clearInterval: +$event })
+              "
             />
           </v-col>
           <v-col cols="12" sm="6">
@@ -102,7 +104,9 @@ function onClipboardSettingsChange(setting: Settings) {
               :suffix="__('settings.seconds')"
               type="number"
               variant="outlined"
-              @change="onClipboardSettingsChange({ monitorInterval: +$event })"
+              @update:model-value="
+                onClipboardSettingsChange({ monitorInterval: +$event })
+              "
             />
           </v-col>
         </v-row>
@@ -120,7 +124,9 @@ function onClipboardSettingsChange(setting: Settings) {
               :rules="[rules.maxHistoryCount.rule]"
               type="number"
               variant="outlined"
-              @change="onClipboardSettingsChange({ maxHistoryCount: +$event })"
+              @update:model-value="
+                onClipboardSettingsChange({ maxHistoryCount: +$event })
+              "
             />
           </v-col>
           <v-col cols="12" sm="6">
@@ -136,7 +142,9 @@ function onClipboardSettingsChange(setting: Settings) {
               :rules="[rules.maxTextLength.rule]"
               type="number"
               variant="outlined"
-              @change="onClipboardSettingsChange({ maxTextLength: +$event })"
+              @update:model-value="
+                onClipboardSettingsChange({ maxTextLength: +$event })
+              "
             />
           </v-col>
         </v-row>

@@ -88,11 +88,20 @@ function startMonitoring() {
     if (!historyItems[0] || historyItems[0].text !== text) {
       const index = historyItems.findIndex((item) => item.text === text);
       if (0 <= index) {
+        const foundItem = historyItems[index];
         historyItems.splice(index, 1);
+        historyItems.unshift(foundItem);
+      } else {
+        historyItems.unshift({ text, time });
       }
-      historyItems.unshift({ text, time });
-      if (maxHistoryCount < historyItems.length) {
-        historyItems.length = maxHistoryCount;
+      for (
+        let i = historyItems.length - 1;
+        i >= 0 && historyItems.length > maxHistoryCount;
+        i--
+      ) {
+        if (!historyItems[i].pinned) {
+          historyItems.splice(i, 1);
+        }
       }
       setHistoryItems(historyItems);
       ipcMain.emit('clipboard-history-change', historyItems);
@@ -112,6 +121,17 @@ function startMonitoring() {
 export function restartMonitoring() {
   clearInterval(timeoutId);
   timeoutId = startMonitoring();
+}
+
+export function pinHistory(pinnedText: string) {
+  const historyItems = getHistoryItems();
+  const foundItem = historyItems.find((item) => item.text === pinnedText);
+  if (foundItem) {
+    foundItem.pinned = !foundItem.pinned;
+  }
+  setHistoryItems(historyItems);
+
+  restartMonitoring();
 }
 
 export function deleteHistory(removedText: string) {

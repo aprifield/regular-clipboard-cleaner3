@@ -9,6 +9,7 @@ import { switchTaskbarIcon } from './background/app-taskbar-helper';
 import {
   deleteAllHistory,
   deleteHistory,
+  pinHistory,
   restartMonitoring,
 } from './background/clipboard-cleaner';
 import { copyTextAndPostProcess } from './background/clipboard-helper';
@@ -252,6 +253,10 @@ ipcMain
   .on('web:keydown:escape', () => {
     hideWindow(historyWin);
   })
+  .on('web:click:pin', (event, { text }: { text: string }) => {
+    pinHistory(text);
+    sendToWebContents();
+  })
   .on('web:click:delete', (event, { text }: { text: string }) => {
     deleteHistory(text);
     sendToWebContents();
@@ -293,5 +298,3 @@ ipcMain
   .on('clipboard-history-change', () => {
     sendToWebContents();
   });
-
-app.whenReady().then(() => showOrCreateWindow('history'));

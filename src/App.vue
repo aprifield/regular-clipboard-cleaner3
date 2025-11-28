@@ -25,6 +25,10 @@ function onClipboardListItemClick(value: {
   window.ipcBridge.send('web:click:list-item', cloneDeep(value));
 }
 
+function onClipboardPinClick(text: string) {
+  window.ipcBridge.send('web:click:pin', { text });
+}
+
 function onClipboardDeleteClick(text: string) {
   window.ipcBridge.send('web:click:delete', { text });
 }
@@ -96,6 +100,7 @@ onMounted(() => {
         :settings="settings"
         @click:clipboard-delete="onClipboardDeleteClick"
         @click:clipboard-list-item="onClipboardListItemClick"
+        @click:clipboard-pin="onClipboardPinClick"
         @keydown:clipboard-enter="onClipboardEnterKeyDown"
         @keydown:clipboard-escape="onClipboardEscapeKeyDown"
       />

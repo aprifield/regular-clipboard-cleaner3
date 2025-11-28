@@ -26,7 +26,7 @@ const emit = defineEmits<{
     e: 'click:clipboard-list-item' | 'keydown:clipboard-enter',
     value: { text: string; historyEvent: HistoryEvent }
   ): void;
-  (e: 'click:clipboard-delete', value: string): void;
+  (e: 'click:clipboard-pin' | 'click:clipboard-delete', value: string): void;
   (e: 'keydown:clipboard-escape'): void;
 }>();
 
@@ -57,16 +57,22 @@ const tableHistoryItems = computed<TableHistoryItem[]>(() => {
 
 const currentHistoryItems = computed<TableHistoryItem[]>(() => {
   if (search.value) {
-    const wordRegExps = search.value
-      .split(' ')
-      .filter(Boolean)
-      .map((word) => word.replace(/[.*+?^=!:${}()|[\]/\\]/g, String.raw`\$&`))
-      .map((word) => new RegExp(word, 'i'));
-    return wordRegExps.length > 0
-      ? tableHistoryItems.value.filter((item) =>
-          wordRegExps.every((re) => re.test(item.text))
-        )
-      : tableHistoryItems.value;
+    if (search.value === '/pin') {
+      return tableHistoryItems.value.filter(
+        (item) => item.pinned || item.text.includes('/pin')
+      );
+    } else {
+      const wordRegExps = search.value
+        .split(' ')
+        .filter(Boolean)
+        .map((word) => word.replace(/[.*+?^=!:${}()|[\]/\\]/g, String.raw`\$&`))
+        .map((word) => new RegExp(word, 'i'));
+      return wordRegExps.length > 0
+        ? tableHistoryItems.value.filter((item) =>
+            wordRegExps.every((re) => re.test(item.text))
+          )
+        : tableHistoryItems.value;
+    }
   } else {
     return tableHistoryItems.value;
   }
@@ -81,6 +87,7 @@ function initStatus() {
   selectedIndex.value = -1;
   keyboardEvents.value = [];
   copyEventParams.value = undefined;
+  historyList.value!.$el.scrollTop = 0;
 }
 
 function createHistoryEvent(): HistoryEvent {
@@ -196,6 +203,10 @@ function onListItemClick(text: string) {
   });
 }
 
+function onPinClick(text: string) {
+  emit('click:clipboard-pin', text);
+}
+
 function onDeleteClick(text: string) {
   emit('click:clipboard-delete', text);
   selectedIndex.value = -1;
@@ -306,7 +317,11 @@ function onWindowBlur() {
 watch(
   () => props.historyItems,
   (newHistoryItems: HistoryItem[], oldHistoryItems: HistoryItem[]) => {
-    if (oldHistoryItems.length <= newHistoryItems.length) {
+    if (
+      oldHistoryItems.length < newHistoryItems.length ||
+      (oldHistoryItems.length === newHistoryItems.length &&
+        oldHistoryItems[0]?.text !== newHistoryItems[0]?.text)
+    ) {
       historyList.value!.$el.classList.add('scroll-behavior-smooth');
       historyList.value!.$el.scrollTop = 0;
       historyList.value!.$el.classList.remove('scroll-behavior-smooth');
@@ -344,14 +359,14 @@ onUnmounted(() => {
         density="comfortable"
         hide-details
         :model-value="search"
-        placeholder="Search"
+        :placeholder="`Search${props.settings.maintained ? ' (/pin)' : ''}`"
         variant="underlined"
         @blur="isTextFieldFocused = false"
         @focus="isTextFieldFocused = true"
         @update:model-value="onSearchInput"
       >
-        <template #append-inner>
-          <v-icon size="20">mdi-magnify</v-icon>
+        <template #prepend-inner>
+          <v-icon class="mt-1" size="20">mdi-magnify</v-icon>
         </template>
       </v-text-field>
     </div>
@@ -378,32 +393,55 @@ onUnmounted(() => {
             :class="{ 'v-list-item--active': index === selectedIndex }"
             density="compact"
             @click="onListItemClick(item.text)"
+            @mousemove="selectedIndex = index"
           >
             <template #prepend>
-              <div class="history-no" @mousemove="selectedIndex = index">
-                {{ item.row }}
+              <div class="history-prepend">
+                <template v-if="props.settings.maintained">
+                  <v-btn
+                    :class="{ 'd-block': item.pinned }"
+                    density="compact"
+                    :icon="
+                      item.pinned && index === selectedIndex
+                        ? 'mdi-pin-off-outline'
+                        : 'mdi-pin-outline'
+                    "
+                    size="x-small"
+                    :title="
+                      item.pinned
+                        ? 'Unpin to allow deletion'
+                        : 'Pin to keep from deletion'
+                    "
+                    variant="plain"
+                    @click.stop="onPinClick(item.text)"
+                    @mousedown.stop
+                  />
+                  <div v-if="!item.pinned" class="history-no">
+                    {{ item.row }}
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="history-no d-block">{{ item.row }}</div>
+                </template>
               </div>
             </template>
-            <v-list-item-title @mousemove="selectedIndex = index">
+            <v-list-item-title>
               <ClipboardHistoryText
                 :history-event="tooltipHistoryEvent"
-                :settings="settings"
+                :settings="props.settings"
                 :text="item.text"
                 :time="item.time"
-                :tooltip="index === selectedIndex"
+                :tooltip="index === selectedIndex && !isTextFieldFocused"
                 :tooltip-line-count="Math.floor((maxVisibleItemCount * 2) / 3)"
               />
             </v-list-item-title>
             <template #append>
-              <div
-                class="history-action"
-                title="Delete"
-                @mousemove="selectedIndex = index"
-              >
+              <div class="history-append">
                 <v-btn
                   density="compact"
                   icon="mdi-trash-can-outline"
                   size="x-small"
+                  title="Delete"
                   variant="plain"
                   @click.stop="onDeleteClick(item.text)"
                   @mousedown.stop
@@ -428,21 +466,42 @@ onUnmounted(() => {
   .v-list-item {
     min-height: 32px;
 
-    .history-no {
-      text-align: right;
+    .history-prepend {
       margin-right: 8px;
       min-width: 22px;
-      font-size: 12px;
-      opacity: 0.6;
+
+      .history-no {
+        text-align: right;
+        font-size: 12px;
+        opacity: 0.6;
+      }
+
+      .v-btn {
+        display: none;
+      }
     }
 
-    .history-action {
-      display: none;
+    .history-append {
+      .v-btn {
+        display: none;
+      }
     }
 
     &:hover {
-      .history-action {
-        display: inline-flex;
+      .history-prepend {
+        .history-no {
+          display: none;
+        }
+
+        .v-btn {
+          display: block;
+        }
+      }
+
+      .history-append {
+        .v-btn {
+          display: block;
+        }
       }
     }
   }
